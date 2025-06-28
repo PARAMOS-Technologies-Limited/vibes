@@ -1,2 +1,2 @@
 # hovel
-This is a hovel that is a unit in a settlement for running an instance of Ollama.
+A development environment API that spins up an AI agent-powered workspace, featuring an embeddable web terminal interface for seamless integration into web applications.

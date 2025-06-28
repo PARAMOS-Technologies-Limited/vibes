@@ -1,18 +1,12 @@
-version: '3.8'
-
 services:
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama-qwen
+  api:
+    build: .
     ports:
-      - "11434:11434"
+      - "8000:8000"
     volumes:
-      - ./.docker/ollama:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    command: ["sh", "-c", "ollama serve & sleep 10 && ollama pull qwen2.5-coder && tail -f /dev/null"]
+      - .:/app
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=server.py
+    restart: unless-stopped
+  
