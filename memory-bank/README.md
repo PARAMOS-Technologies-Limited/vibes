@@ -22,11 +22,18 @@ This directory contains comprehensive documentation and lessons learned for AI a
 1. **ModuleNotFoundError**: Check Python installations and use specific binary paths
 2. **SSL Issues**: Install system SSL packages (libssl-dev, python3-openssl, ca-certificates)
 3. **External Environment Management**: Use virtual environments or specific Python binaries
+4. **Port Conflicts**: Verify unique port assignment in branch .env files
 
 ### When Planning Development
 1. Review [Comprehensive Project Plan](project-plan-comprehensive.md) for architecture and API specifications
 2. Follow the documented directory structure and development workflow
 3. Reference the future enhancements roadmap for feature planning
+
+### When Managing Branches (NEW)
+1. **Create branches** using the API: `POST /api/branch`
+2. **Verify unique ports** are assigned to each branch
+3. **Check .env files** for correct PORT assignments
+4. **Test branch isolation** by running multiple branches simultaneously
 
 ## 🔍 Search Keywords
 
@@ -38,6 +45,7 @@ Use these keywords to quickly find relevant information:
 - **API endpoints**: REST API, branch management, health checks
 - **Development workflow**: Cursor.dev integration, testing, deployment
 - **Architecture**: System design, directory structure, technology stack
+- **Port conflicts**: Branch management, unique port assignment, environment isolation
 
 ## 📖 How to Use This Knowledge Base
 
@@ -57,6 +65,28 @@ Use these keywords to quickly find relevant information:
 3. Follow the documented troubleshooting sequence
 4. Document any new solutions discovered
 
+### For Branch Management (NEW)
+1. **Port Conflict Resolution**: ✅ **COMPLETED** - Unique ports are automatically assigned
+2. **Environment Isolation**: Each branch runs on its own port (8001, 8002, 8003, etc.)
+3. **Verification**: Check .env files and Docker Compose configurations
+4. **Testing**: Create multiple branches to verify isolation
+
+## 🎉 Recent Achievements
+
+### Port Conflict Resolution - COMPLETED ✅
+**Problem Solved:** Multiple branches were being created with the same port (8000), causing conflicts.
+
+**Solution:** Updated branch creation functions to use unique ports:
+- ✅ Each branch gets unique port in .env file
+- ✅ Docker Compose uses unique external ports
+- ✅ Automatic port increment (8001, 8002, 8003, etc.)
+- ✅ No conflicts between running branches
+
+**Impact:**
+- 🚀 Multiple branches can run simultaneously
+- 🔧 Full environment isolation achieved
+- 📊 Scalable branch management for teams
+
 ## 🔄 Maintenance
 
 This knowledge base should be updated whenever:
@@ -64,14 +94,15 @@ This knowledge base should be updated whenever:
 - Architecture changes are made
 - New features are implemented
 - Best practices are discovered
+- Major problems are solved (like port conflicts)
 
 ## 📞 Related Resources
 
 - **Main README**: [../README.md](../README.md) - Project overview and quick start
 - **Branch Documentation**: [../docs/BRANCH_README.md](../docs/BRANCH_README.md) - Branch management system
-- **API Server**: [../server.py](../server.py) - Main Flask application
+- **API Server**: [../server.py](../server.py) - Main Flask application with port conflict resolution
 - **Docker Configuration**: [../Dockerfile](../Dockerfile) - Container setup
 
 ---
 
-*This memory bank serves as a comprehensive knowledge base for AI agents working on the Hovel project, ensuring consistent problem-solving approaches and best practices.* 
+*This memory bank serves as a comprehensive knowledge base for AI agents working on the Hovel project, ensuring consistent problem-solving approaches and best practices. The recent port conflict resolution demonstrates the value of this knowledge base in solving complex development challenges.* 

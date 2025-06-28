@@ -66,7 +66,7 @@ def create_git_branch(branch_name):
         logger.warning("Continuing without git branch creation")
         return True
 
-def duplicate_app_directory(branch_name):
+def duplicate_app_directory(branch_name, port):
     """Duplicate the app directory for the new branch"""
     try:
         source_dir = 'app'
@@ -81,23 +81,23 @@ def duplicate_app_directory(branch_name):
         logger.info(f"Duplicated app directory to {target_dir}")
         
         # Create branch-specific environment file
-        create_branch_env_file(branch_name, target_dir)
+        create_branch_env_file(branch_name, target_dir, port)
         
         # Create branch-specific Docker Compose file
-        create_branch_docker_compose(branch_name, target_dir)
+        create_branch_docker_compose(branch_name, target_dir, port)
         
         return target_dir
     except Exception as e:
         logger.error(f"Error duplicating app directory: {e}")
         raise
 
-def create_branch_env_file(branch_name, target_dir):
+def create_branch_env_file(branch_name, target_dir, port):
     """Create environment file for the branch"""
     try:
         env_content = f"""# Environment variables for branch: {branch_name}
 FLASK_APP=app.py
 FLASK_ENV=development
-PORT=8000
+PORT={port}
 BRANCH_NAME={branch_name}
 """
         
@@ -109,12 +109,9 @@ BRANCH_NAME={branch_name}
     except Exception as e:
         logger.warning(f"Could not create environment file: {e}")
 
-def create_branch_docker_compose(branch_name, target_dir):
+def create_branch_docker_compose(branch_name, target_dir, port):
     """Create Docker Compose file for the branch"""
     try:
-        # Get the port for this branch
-        port = BRANCH_PORTS.get(branch_name, get_next_available_port())
-        
         compose_content = f"""services:
   app-{branch_name}:
     build: .
@@ -127,7 +124,7 @@ def create_branch_docker_compose(branch_name, target_dir):
     environment:
       - FLASK_APP=app.py
       - FLASK_ENV=development
-      - PORT=8000
+      - PORT={port}
       - BRANCH_NAME={branch_name}
     restart: unless-stopped
     container_name: hovel-app-{branch_name}
@@ -257,7 +254,7 @@ def create_branch():
         create_git_branch(branch_name)
         
         # Duplicate app directory (this will create env files and docker compose)
-        app_dir = duplicate_app_directory(branch_name)
+        app_dir = duplicate_app_directory(branch_name, port)
         
         # Create branch configuration
         config = create_branch_config(branch_name, port, app_dir)

@@ -32,6 +32,17 @@ When trying to run a Flask application (`server.py`), encountered multiple issue
 - Cannot install packages system-wide
 - Virtual environment creation fails due to SSL issues
 
+### 4. Port Conflicts in Branch Management
+**Symptoms:**
+- Multiple branches created with same port (8000)
+- Environment files (.env) hardcoded to PORT=8000
+- Docker Compose files using conflicting ports
+
+**Root Cause:**
+- `create_branch_env_file` function hardcoded PORT=8000
+- `duplicate_app_directory` function not passing unique port
+- `create_branch_docker_compose` function using hardcoded port
+
 ## Solutions Discovered
 
 ### 1. Use Specific Python Binary
@@ -74,6 +85,62 @@ python3 -c "import flask; print('Flask found')"
 /usr/local/bin/python3.11 -c "import flask; print('Flask found')"
 ```
 
+### 4. Port Conflict Resolution (NEW)
+**Solution:** Updated branch creation functions to use unique ports
+
+**Code Changes Made:**
+
+1. **Updated `create_branch_env_file` function:**
+```python
+def create_branch_env_file(branch_name, target_dir, port):
+    """Create environment file for the branch"""
+    try:
+        env_content = f"""# Environment variables for branch: {branch_name}
+FLASK_APP=app.py
+FLASK_ENV=development
+PORT={port}  # Now uses unique port instead of hardcoded 8000
+BRANCH_NAME={branch_name}
+"""
+```
+
+2. **Updated `duplicate_app_directory` function:**
+```python
+def duplicate_app_directory(branch_name, port):  # Added port parameter
+    # ... existing code ...
+    create_branch_env_file(branch_name, target_dir, port)  # Pass port
+    create_branch_docker_compose(branch_name, target_dir, port)  # Pass port
+```
+
+3. **Updated `create_branch_docker_compose` function:**
+```python
+def create_branch_docker_compose(branch_name, target_dir, port):  # Added port parameter
+    compose_content = f"""services:
+  app-{branch_name}:
+    build: .
+    ports:
+      - "{port}:8000"  # External port uses unique port
+    environment:
+      - PORT={port}  # Environment variable uses unique port
+      - BRANCH_NAME={branch_name}
+"""
+```
+
+4. **Updated main `create_branch` function:**
+```python
+# Get next available port and store it first
+port = get_next_available_port()
+BRANCH_PORTS[branch_name] = port
+
+# Pass port to all helper functions
+app_dir = duplicate_app_directory(branch_name, port)
+```
+
+**Verification Results:**
+- ✅ Branch `test-unique-port`: PORT=8001 in .env file
+- ✅ Branch `test-port-8002`: PORT=8002 in .env file
+- ✅ Docker Compose files use correct external ports
+- ✅ No port conflicts between branches
+
 ## Key Lessons for AI Agents
 
 ### 1. Container Environment Awareness
@@ -85,7 +152,7 @@ python3 -c "import flask; print('Flask found')"
 1. Try standard `python server.py`
 2. If ModuleNotFoundError, check `which python` and `python --version`
 3. Test Flask import: `python -c "import flask; print('Flask found')"`
-4. Try alternative Python binaries: `/usr/local/bin/python3.11`
+4. Try alternative Python binaries: `/usr/local/bin/python3.11 server.py`
 5. Check for SSL issues if pip install fails
 6. Install system SSL packages if needed
 
@@ -100,6 +167,13 @@ python3 -c "import flask; print('Flask found')"
 - **SSL warnings** → Install system SSL packages
 - **Externally managed environment** → Use virtual environments or specific binaries
 - **Connection errors** → Verify network and SSL support
+
+### 5. Branch Management Best Practices (NEW)
+- **Always pass unique ports** to environment file creation functions
+- **Update function signatures** to accept port parameters
+- **Verify port assignments** in both .env and Docker Compose files
+- **Test port uniqueness** by creating multiple branches
+- **Use port tracking** (BRANCH_PORTS dictionary) to avoid conflicts
 
 ## Quick Reference Commands
 
@@ -117,6 +191,15 @@ apt-get update && apt-get install -y libssl-dev python3-openssl ca-certificates
 
 # Run server with specific Python binary
 /usr/local/bin/python3.11 server.py
+
+# Test branch creation with unique ports
+curl -X POST http://localhost:8000/api/branch \
+  -H "Content-Type: application/json" \
+  -d '{"branch_name": "test-branch"}'
+
+# Verify port assignments
+curl -s http://localhost:8000/api/branches
+cat branches/test-branch/.env
 ```
 
 ## Prevention Strategies
@@ -126,8 +209,13 @@ apt-get update && apt-get install -y libssl-dev python3-openssl ca-certificates
 3. **Document working Python binary paths** in project documentation
 4. **Use virtual environments** when possible to avoid system conflicts
 5. **Include troubleshooting steps** in README files
+6. **Pass unique ports** to all branch creation helper functions
+7. **Verify port assignments** in generated configuration files
+8. **Test branch isolation** by running multiple branches simultaneously
 
 ## Related Files
 - `Dockerfile` - Updated with SSL dependencies
 - `requirements.txt` - Python package dependencies
-- `server.py` - Flask application that was failing to start 
+- `server.py` - Flask application with port conflict resolution
+- `branches/*/.env` - Branch-specific environment files with unique ports
+- `branches/*/docker-compose.yaml` - Branch-specific Docker Compose files 

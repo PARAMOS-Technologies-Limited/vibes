@@ -54,7 +54,7 @@ python3 server.py
 4. Install Flask: `pip install flask flask-cors gunicorn requests`
 
 ### Step 2: SSL Issues
-**If you get:** `WARNING: pip is configured with locations that require TLS/SSL`
+**If you get:** `WARNING: pip is configured with locations that require TLS/SSL, however the ssl module in Python is not available`
 
 **Solution:**
 ```bash
@@ -68,6 +68,32 @@ apt-get update && apt-get install -y libssl-dev python3-openssl ca-certificates
 1. Use virtual environment: `python3 -m venv venv && source venv/bin/activate`
 2. Use specific Python binary: `/usr/local/bin/python3.11 server.py`
 3. Override with flag: `pip install --break-system-packages flask`
+
+### Step 4: Port Conflicts in Branch Management (NEW)
+**If you get:** Multiple branches with same port or port conflicts
+
+**Solutions:**
+1. **Verify port assignments:** Check that each branch has unique ports
+2. **Check .env files:** Ensure `PORT={unique_port}` in each branch's .env file
+3. **Verify Docker Compose:** Check that external ports are unique
+4. **Test branch isolation:** Create multiple branches and verify no conflicts
+
+**Code Fix Applied:**
+```python
+# Updated functions to accept and use unique ports
+def create_branch_env_file(branch_name, target_dir, port):
+    env_content = f"""# Environment variables for branch: {branch_name}
+FLASK_APP=app.py
+FLASK_ENV=development
+PORT={port}  # Uses unique port instead of hardcoded 8000
+BRANCH_NAME={branch_name}
+"""
+
+def duplicate_app_directory(branch_name, port):  # Added port parameter
+    # ... existing code ...
+    create_branch_env_file(branch_name, target_dir, port)
+    create_branch_docker_compose(branch_name, target_dir, port)
+```
 
 ## Success Indicators
 
@@ -83,6 +109,48 @@ Flask found
  * Running on http://172.18.0.2:8000
  * Debugger is active!
  * Debugger PIN: 350-616-165
+```
+
+## Branch Management Commands (NEW)
+
+### Create a New Branch
+```bash
+curl -X POST http://localhost:8000/api/branch \
+  -H "Content-Type: application/json" \
+  -d '{"branch_name": "feature-new-ui"}'
+```
+
+### List All Branches
+```bash
+curl -s http://localhost:8000/api/branches
+```
+
+### Verify Branch Port Assignment
+```bash
+# Check branch .env file
+cat branches/feature-new-ui/.env
+
+# Check Docker Compose file
+cat branches/feature-new-ui/docker-compose.yaml
+
+# Expected output for .env:
+# PORT=8001  # Unique port for this branch
+# BRANCH_NAME=feature-new-ui
+```
+
+### Test Branch Isolation
+```bash
+# Create multiple branches to test port uniqueness
+curl -X POST http://localhost:8000/api/branch \
+  -H "Content-Type: application/json" \
+  -d '{"branch_name": "test-1"}'
+
+curl -X POST http://localhost:8000/api/branch \
+  -H "Content-Type: application/json" \
+  -d '{"branch_name": "test-2"}'
+
+# Verify different ports assigned
+curl -s http://localhost:8000/api/branches | jq '.branches[].port'
 ```
 
 ## Dockerfile Best Practices
@@ -147,6 +215,7 @@ curl -s http://localhost:8000/
 | SSL not available | `WARNING: pip is configured with locations that require TLS/SSL` | Install SSL packages |
 | External environment | `error: externally-managed-environment` | Use specific Python binary or virtual env |
 | Port already in use | `Address already in use` | Change port or kill existing process |
+| Branch port conflicts | Multiple branches with same port | Verify unique port assignment in .env files |
 
 ## Performance Tips
 
@@ -162,6 +231,34 @@ curl -s http://localhost:8000/
 3. **Set proper file permissions**
 4. **Use environment variables** for sensitive data
 5. **Enable CORS** only for necessary origins
+
+## Branch Management Best Practices (NEW)
+
+### Port Assignment Strategy
+- **Automatic port increment**: 8001, 8002, 8003, etc.
+- **Port tracking**: Use BRANCH_PORTS dictionary to avoid conflicts
+- **Environment isolation**: Each branch gets unique port in .env file
+- **Docker Compose integration**: External ports match .env file ports
+
+### Verification Checklist
+- [ ] Each branch has unique port in .env file
+- [ ] Docker Compose external ports are unique
+- [ ] No port conflicts between running branches
+- [ ] Branch configuration files are properly generated
+- [ ] Git branches are created successfully
+
+### Testing Branch Isolation
+```bash
+# Create test branches
+for i in {1..3}; do
+  curl -X POST http://localhost:8000/api/branch \
+    -H "Content-Type: application/json" \
+    -d "{\"branch_name\": \"test-branch-$i\"}"
+done
+
+# Verify unique ports
+curl -s http://localhost:8000/api/branches | jq '.branches[] | {name: .branch_name, port: .port}'
+```
 
 ## Related Documentation
 
