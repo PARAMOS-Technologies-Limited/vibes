@@ -1,0 +1,13 @@
+services:
+  api-{{BRANCH_NAME}}:
+    build: .
+    ports:
+      - "{{PORT}}:8000"
+    volumes:
+      - ./branches/{{BRANCH_NAME}}:/app/app
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - PORT={{PORT}}
+    restart: unless-stopped
+    container_name: hovel-api-{{BRANCH_NAME}} 
