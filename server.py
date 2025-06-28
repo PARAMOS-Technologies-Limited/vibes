@@ -117,8 +117,6 @@ def create_branch_docker_compose(branch_name, target_dir, port):
     build: .
     ports:
       - "{port}:8000"
-    volumes:
-      - .:/app
     env_file:
       - .env
     environment:
@@ -128,6 +126,12 @@ def create_branch_docker_compose(branch_name, target_dir, port):
       - BRANCH_NAME={branch_name}
     restart: unless-stopped
     container_name: hovel-app-{branch_name}
+    networks:
+      - hovel-shared
+
+networks:
+  hovel-shared:
+    external: true
 """
         
         compose_file = os.path.join(target_dir, 'docker-compose.yaml')
@@ -153,32 +157,164 @@ def create_branch_config(branch_name, port, app_dir):
     with open(config_file, 'w') as f:
         json.dump(config, f, indent=2)
     
-    # Generate Docker Compose file
-    generate_docker_compose_for_branch(branch_name, port)
+    # Note: Docker Compose file is already created by create_branch_docker_compose function
     
     return config
 
-def generate_docker_compose_for_branch(branch_name, port):
-    """Generate Docker Compose file for a specific branch"""
+def start_branch_container(branch_name):
+    """Start Docker container for a branch"""
     try:
-        # Read template
-        template_file = 'docker-compose.branch.template.yaml'
-        if os.path.exists(template_file):
-            with open(template_file, 'r') as f:
-                template_content = f.read()
-            
-            # Replace placeholders
-            compose_content = template_content.replace('{{BRANCH_NAME}}', branch_name)
-            compose_content = compose_content.replace('{{PORT}}', str(port))
-            
-            # Write generated compose file
-            compose_file = f'branches/{branch_name}/docker-compose.yaml'
-            with open(compose_file, 'w') as f:
-                f.write(compose_content)
-            
-            logger.info(f"Generated Docker Compose file: {compose_file}")
+        branch_dir = f'branches/{branch_name}'
+        compose_file = os.path.join(branch_dir, 'docker-compose.yaml')
+        
+        if not os.path.exists(compose_file):
+            raise FileNotFoundError(f"Docker Compose file not found for branch {branch_name}")
+        
+        # Start the container using docker-compose
+        # Use just the filename since cwd is set to branch_dir
+        result = subprocess.run([
+            'docker-compose', '-f', 'docker-compose.yaml', 'up', '-d'
+        ], capture_output=True, text=True, cwd=branch_dir, check=True)
+        
+        logger.info(f"Started Docker container for branch {branch_name}")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to start Docker container for branch {branch_name}: {e}")
+        logger.error(f"stdout: {e.stdout}")
+        logger.error(f"stderr: {e.stderr}")
+        return False
     except Exception as e:
-        logger.warning(f"Could not generate Docker Compose file: {e}")
+        logger.error(f"Error starting Docker container for branch {branch_name}: {e}")
+        return False
+
+def stop_branch_container(branch_name):
+    """Stop Docker container for a branch"""
+    try:
+        branch_dir = f'branches/{branch_name}'
+        compose_file = os.path.join(branch_dir, 'docker-compose.yaml')
+        
+        if not os.path.exists(compose_file):
+            raise FileNotFoundError(f"Docker Compose file not found for branch {branch_name}")
+        
+        # Stop the container using docker-compose
+        # Use just the filename since cwd is set to branch_dir
+        result = subprocess.run([
+            'docker-compose', '-f', 'docker-compose.yaml', 'down'
+        ], capture_output=True, text=True, cwd=branch_dir, check=True)
+        
+        logger.info(f"Stopped Docker container for branch {branch_name}")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to stop Docker container for branch {branch_name}: {e}")
+        logger.error(f"stdout: {e.stdout}")
+        logger.error(f"stderr: {e.stderr}")
+        return False
+    except Exception as e:
+        logger.error(f"Error stopping Docker container for branch {branch_name}: {e}")
+        return False
+
+def get_branch_container_status(branch_name):
+    """Get the status of a branch's Docker container"""
+    try:
+        branch_dir = f'branches/{branch_name}'
+        compose_file = os.path.join(branch_dir, 'docker-compose.yaml')
+        
+        if not os.path.exists(compose_file):
+            return {'status': 'not_found', 'message': 'Docker Compose file not found'}
+        
+        # Check container status using docker-compose
+        # Use just the filename since cwd is set to branch_dir
+        result = subprocess.run([
+            'docker-compose', '-f', 'docker-compose.yaml', 'ps'
+        ], capture_output=True, text=True, cwd=branch_dir, check=True)
+        
+        if 'Up' in result.stdout:
+            return {'status': 'running', 'details': result.stdout.strip()}
+        elif 'Exit' in result.stdout:
+            return {'status': 'stopped', 'details': result.stdout.strip()}
+        else:
+            return {'status': 'unknown', 'details': result.stdout.strip()}
+    except subprocess.CalledProcessError as e:
+        return {'status': 'error', 'message': f'Failed to check status: {e.stderr}'}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
+
+def get_branch_logs(branch_name, lines=50):
+    """Get logs from a branch's Docker container"""
+    try:
+        branch_dir = f'branches/{branch_name}'
+        compose_file = os.path.join(branch_dir, 'docker-compose.yaml')
+        
+        if not os.path.exists(compose_file):
+            return {'error': 'Docker Compose file not found'}
+        
+        # Get logs using docker-compose
+        # Use just the filename since cwd is set to branch_dir
+        result = subprocess.run([
+            'docker-compose', '-f', 'docker-compose.yaml', 'logs', '--tail', str(lines)
+        ], capture_output=True, text=True, cwd=branch_dir, check=True)
+        
+        return {'logs': result.stdout.strip()}
+    except subprocess.CalledProcessError as e:
+        return {'error': f'Failed to get logs: {e.stderr}'}
+    except Exception as e:
+        return {'error': str(e)}
+
+def cleanup_branch_environment(branch_name):
+    """Completely cleanup a branch environment - stop container, remove it, and delete files"""
+    try:
+        branch_dir = f'branches/{branch_name}'
+        
+        # Step 1: Stop and remove Docker container
+        if os.path.exists(os.path.join(branch_dir, 'docker-compose.yaml')):
+            try:
+                # Stop the container
+                subprocess.run([
+                    'docker-compose', '-f', 'docker-compose.yaml', 'down', '--rmi', 'all', '--volumes'
+                ], capture_output=True, text=True, cwd=branch_dir, check=True)
+                logger.info(f"Stopped and removed Docker container for branch {branch_name}")
+            except subprocess.CalledProcessError as e:
+                logger.warning(f"Failed to stop Docker container for branch {branch_name}: {e}")
+            except Exception as e:
+                logger.warning(f"Error stopping Docker container for branch {branch_name}: {e}")
+        
+        # Step 2: Remove any remaining containers with the branch name
+        try:
+            subprocess.run([
+                'docker', 'rm', '-f', f'hovel-app-{branch_name}'
+            ], capture_output=True, text=True, check=False)  # Don't fail if container doesn't exist
+        except Exception as e:
+            logger.warning(f"Error removing container for branch {branch_name}: {e}")
+        
+        # Step 3: Remove any images with the branch name
+        try:
+            subprocess.run([
+                'docker', 'rmi', '-f', f'{branch_name}-app-{branch_name}'
+            ], capture_output=True, text=True, check=False)  # Don't fail if image doesn't exist
+        except Exception as e:
+            logger.warning(f"Error removing image for branch {branch_name}: {e}")
+        
+        # Step 4: Delete branch directory and all files
+        if os.path.exists(branch_dir):
+            shutil.rmtree(branch_dir)
+            logger.info(f"Deleted branch directory: {branch_dir}")
+        
+        # Step 5: Remove from tracking
+        if branch_name in BRANCH_PORTS:
+            del BRANCH_PORTS[branch_name]
+            logger.info(f"Removed branch {branch_name} from tracking")
+        
+        # Step 6: Try to delete git branch (optional)
+        try:
+            subprocess.run(['git', 'branch', '-D', branch_name], capture_output=True, text=True, check=False)
+            logger.info(f"Deleted git branch: {branch_name}")
+        except Exception as e:
+            logger.warning(f"Could not delete git branch {branch_name}: {e}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error cleaning up branch {branch_name}: {e}")
+        return False
 
 @app.before_request
 def log_request():
@@ -223,7 +359,14 @@ def api_status():
             '/api/status',
             '/api/data',
             '/api/process',
-            '/api/branch'
+            '/api/branch',
+            '/api/branches',
+            '/api/branch/{branch_name}/start',
+            '/api/branch/{branch_name}/stop',
+            '/api/branch/{branch_name}/status',
+            '/api/branch/{branch_name}/logs',
+            '/api/branch/{branch_name}/restart',
+            '/api/branch/{branch_name} (DELETE)'
         ],
         'timestamp': datetime.utcnow().isoformat() + 'Z'
     })
@@ -237,6 +380,7 @@ def create_branch():
             return jsonify({'error': 'branch_name is required in request body'}), 400
         
         branch_name = data['branch_name']
+        auto_start = data.get('auto_start', False)  # New parameter to auto-start container
         
         # Validate branch name
         if not branch_name or not branch_name.strip():
@@ -259,17 +403,30 @@ def create_branch():
         # Create branch configuration
         config = create_branch_config(branch_name, port, app_dir)
         
+        # Auto-start container if requested
+        container_started = False
+        if auto_start:
+            container_started = start_branch_container(branch_name)
+            if container_started:
+                logger.info(f"Auto-started Docker container for branch {branch_name}")
+            else:
+                logger.warning(f"Failed to auto-start Docker container for branch {branch_name}")
+        
         logger.info(f"Created branch {branch_name} on port {port}")
         
-        return jsonify({
+        response_data = {
             'message': f'Branch {branch_name} created successfully',
             'branch_name': branch_name,
             'port': port,
             'app_directory': app_dir,
             'git_branch': branch_name,
             'status': 'created',
+            'auto_start': auto_start,
+            'container_started': container_started,
             'timestamp': datetime.utcnow().isoformat() + 'Z'
-        }), 201
+        }
+        
+        return jsonify(response_data), 201
         
     except Exception as e:
         logger.error(f"Error creating branch: {str(e)}")
@@ -331,6 +488,151 @@ def process_data():
     except Exception as e:
         logger.error(f"Error processing data: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/branch/<branch_name>/start', methods=['POST'])
+def start_branch(branch_name):
+    """Start Docker container for a branch"""
+    try:
+        if branch_name not in BRANCH_PORTS:
+            return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        success = start_branch_container(branch_name)
+        if success:
+            return jsonify({
+                'message': f'Branch {branch_name} started successfully',
+                'branch_name': branch_name,
+                'status': 'started',
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }), 200
+        else:
+            return jsonify({'error': f'Failed to start branch {branch_name}'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error starting branch {branch_name}: {str(e)}")
+        return jsonify({'error': f'Failed to start branch: {str(e)}'}), 500
+
+@app.route('/api/branch/<branch_name>/stop', methods=['POST'])
+def stop_branch(branch_name):
+    """Stop Docker container for a branch"""
+    try:
+        if branch_name not in BRANCH_PORTS:
+            return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        success = stop_branch_container(branch_name)
+        if success:
+            return jsonify({
+                'message': f'Branch {branch_name} stopped successfully',
+                'branch_name': branch_name,
+                'status': 'stopped',
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }), 200
+        else:
+            return jsonify({'error': f'Failed to stop branch {branch_name}'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error stopping branch {branch_name}: {str(e)}")
+        return jsonify({'error': f'Failed to stop branch: {str(e)}'}), 500
+
+@app.route('/api/branch/<branch_name>/status', methods=['GET'])
+def get_branch_status(branch_name):
+    """Get the status of a branch's Docker container"""
+    try:
+        if branch_name not in BRANCH_PORTS:
+            return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        status = get_branch_container_status(branch_name)
+        return jsonify({
+            'branch_name': branch_name,
+            'container_status': status,
+            'port': BRANCH_PORTS.get(branch_name),
+            'timestamp': datetime.utcnow().isoformat() + 'Z'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error getting status for branch {branch_name}: {str(e)}")
+        return jsonify({'error': f'Failed to get branch status: {str(e)}'}), 500
+
+@app.route('/api/branch/<branch_name>/logs', methods=['GET'])
+def get_branch_logs_endpoint(branch_name):
+    """Get logs from a branch's Docker container"""
+    try:
+        if branch_name not in BRANCH_PORTS:
+            return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        lines = request.args.get('lines', 50, type=int)
+        logs = get_branch_logs(branch_name, lines)
+        
+        if 'error' in logs:
+            return jsonify(logs), 500
+        
+        return jsonify({
+            'branch_name': branch_name,
+            'logs': logs['logs'],
+            'lines': lines,
+            'timestamp': datetime.utcnow().isoformat() + 'Z'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error getting logs for branch {branch_name}: {str(e)}")
+        return jsonify({'error': f'Failed to get branch logs: {str(e)}'}), 500
+
+@app.route('/api/branch/<branch_name>/restart', methods=['POST'])
+def restart_branch(branch_name):
+    """Restart Docker container for a branch"""
+    try:
+        if branch_name not in BRANCH_PORTS:
+            return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        # Stop the container first
+        stop_success = stop_branch_container(branch_name)
+        if not stop_success:
+            logger.warning(f"Failed to stop branch {branch_name} before restart")
+        
+        # Start the container
+        start_success = start_branch_container(branch_name)
+        if start_success:
+            return jsonify({
+                'message': f'Branch {branch_name} restarted successfully',
+                'branch_name': branch_name,
+                'status': 'restarted',
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }), 200
+        else:
+            return jsonify({'error': f'Failed to restart branch {branch_name}'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error restarting branch {branch_name}: {str(e)}")
+        return jsonify({'error': f'Failed to restart branch: {str(e)}'}), 500
+
+@app.route('/api/branch/<branch_name>', methods=['DELETE'])
+def delete_branch(branch_name):
+    """Completely cleanup and delete a branch environment"""
+    try:
+        if branch_name not in BRANCH_PORTS:
+            return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        success = cleanup_branch_environment(branch_name)
+        if success:
+            return jsonify({
+                'message': f'Branch {branch_name} completely cleaned up and deleted',
+                'branch_name': branch_name,
+                'status': 'deleted',
+                'actions_performed': [
+                    'stopped_docker_container',
+                    'removed_docker_container',
+                    'removed_docker_image',
+                    'deleted_branch_files',
+                    'removed_from_tracking',
+                    'deleted_git_branch'
+                ],
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }), 200
+        else:
+            return jsonify({'error': f'Failed to cleanup branch {branch_name}'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error deleting branch {branch_name}: {str(e)}")
+        return jsonify({'error': f'Failed to delete branch: {str(e)}'}), 500
 
 @app.errorhandler(404)
 def not_found(error):

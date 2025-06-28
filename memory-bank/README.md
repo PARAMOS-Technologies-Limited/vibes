@@ -23,6 +23,7 @@ This directory contains comprehensive documentation and lessons learned for AI a
 2. **SSL Issues**: Install system SSL packages (libssl-dev, python3-openssl, ca-certificates)
 3. **External Environment Management**: Use virtual environments or specific Python binaries
 4. **Port Conflicts**: Verify unique port assignment in branch .env files
+5. **Docker Issues**: Check Docker daemon status and socket permissions
 
 ### When Planning Development
 1. Review [Comprehensive Project Plan](project-plan-comprehensive.md) for architecture and API specifications
@@ -35,17 +36,25 @@ This directory contains comprehensive documentation and lessons learned for AI a
 3. **Check .env files** for correct PORT assignments
 4. **Test branch isolation** by running multiple branches simultaneously
 
+### When Managing Docker Containers (NEW)
+1. **Auto-start containers** by setting `auto_start: true` in branch creation
+2. **Monitor containers** using `/api/branch/{name}/status` endpoint
+3. **Access logs** using `/api/branch/{name}/logs` endpoint
+4. **Start/stop containers** using dedicated endpoints
+5. **Verify Docker-in-Docker** is working properly
+
 ## 🔍 Search Keywords
 
 Use these keywords to quickly find relevant information:
 
 - **Python environment**: Environment setup, SSL issues, virtual environments
 - **Flask server**: Startup commands, troubleshooting, configuration
-- **Docker**: Container setup, SSL dependencies, environment isolation
-- **API endpoints**: REST API, branch management, health checks
+- **Docker**: Container setup, SSL dependencies, environment isolation, Docker-in-Docker
+- **API endpoints**: REST API, branch management, health checks, container management
 - **Development workflow**: Cursor.dev integration, testing, deployment
 - **Architecture**: System design, directory structure, technology stack
 - **Port conflicts**: Branch management, unique port assignment, environment isolation
+- **Container management**: Docker containers, auto-start, monitoring, logs
 
 ## 📖 How to Use This Knowledge Base
 
@@ -60,7 +69,7 @@ Use these keywords to quickly find relevant information:
 3. Update the knowledge base with new lessons learned
 
 ### For Problem Solving
-1. Identify the issue category (environment, server, API, etc.)
+1. Identify the issue category (environment, server, API, Docker, etc.)
 2. Search the relevant guide for similar problems
 3. Follow the documented troubleshooting sequence
 4. Document any new solutions discovered
@@ -70,6 +79,12 @@ Use these keywords to quickly find relevant information:
 2. **Environment Isolation**: Each branch runs on its own port (8001, 8002, 8003, etc.)
 3. **Verification**: Check .env files and Docker Compose configurations
 4. **Testing**: Create multiple branches to verify isolation
+
+### For Docker Container Management (NEW)
+1. **Docker-in-Docker Setup**: ✅ **COMPLETED** - Orchestrator can manage other containers
+2. **Auto-start Functionality**: ✅ **COMPLETED** - Containers start automatically when requested
+3. **Container Monitoring**: ✅ **COMPLETED** - Status and logs available via API
+4. **Container Lifecycle**: ✅ **COMPLETED** - Start, stop, restart operations available
 
 ## 🎉 Recent Achievements
 
@@ -87,6 +102,22 @@ Use these keywords to quickly find relevant information:
 - 🔧 Full environment isolation achieved
 - 📊 Scalable branch management for teams
 
+### Docker Integration - COMPLETED ✅
+**Problem Solved:** Need to automatically start cloned dev environments using Docker.
+
+**Solution:** Implemented full Docker-in-Docker (DinD) support:
+- ✅ Docker installed in orchestrator container
+- ✅ Docker socket mounted for container management
+- ✅ Auto-start functionality for new branches
+- ✅ Container monitoring and lifecycle management
+- ✅ Comprehensive API endpoints for container operations
+
+**Impact:**
+- 🐳 Full containerization of development environments
+- 🔄 Automatic container startup and management
+- 📊 Real-time container status and log monitoring
+- 🚀 Scalable development environment orchestration
+
 ## 🔄 Maintenance
 
 This knowledge base should be updated whenever:
@@ -94,15 +125,16 @@ This knowledge base should be updated whenever:
 - Architecture changes are made
 - New features are implemented
 - Best practices are discovered
-- Major problems are solved (like port conflicts)
+- Major problems are solved (like port conflicts and Docker integration)
 
 ## 📞 Related Resources
 
 - **Main README**: [../README.md](../README.md) - Project overview and quick start
 - **Branch Documentation**: [../docs/BRANCH_README.md](../docs/BRANCH_README.md) - Branch management system
-- **API Server**: [../server.py](../server.py) - Main Flask application with port conflict resolution
-- **Docker Configuration**: [../Dockerfile](../Dockerfile) - Container setup
+- **API Server**: [../server.py](../server.py) - Main Flask application with Docker integration
+- **Docker Configuration**: [../Dockerfile](../Dockerfile) - Container setup with Docker-in-Docker
+- **Docker Test Script**: [../test_docker_functionality.py](../test_docker_functionality.py) - Docker functionality testing
 
 ---
 
-*This memory bank serves as a comprehensive knowledge base for AI agents working on the Hovel project, ensuring consistent problem-solving approaches and best practices. The recent port conflict resolution demonstrates the value of this knowledge base in solving complex development challenges.* 
+*This memory bank serves as a comprehensive knowledge base for AI agents working on the Hovel project, ensuring consistent problem-solving approaches and best practices. The recent Docker integration demonstrates the value of this knowledge base in solving complex development challenges.* 

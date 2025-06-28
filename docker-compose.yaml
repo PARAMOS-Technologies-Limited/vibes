@@ -5,8 +5,21 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - FLASK_ENV=development
       - FLASK_APP=server.py
     restart: unless-stopped
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+    networks:
+      - hovel-shared
+
+networks:
+  hovel-shared:
+    name: hovel-shared
+    driver: bridge
   

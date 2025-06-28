@@ -3,11 +3,15 @@ services:
     build: .
     ports:
       - "{{PORT}}:8000"
-    volumes:
-      - ./branches/{{BRANCH_NAME}}:/app/app
     environment:
       - FLASK_ENV=development
       - FLASK_APP=app.py
       - PORT={{PORT}}
     restart: unless-stopped
-    container_name: hovel-api-{{BRANCH_NAME}} 
+    container_name: hovel-api-{{BRANCH_NAME}}
+    networks:
+      - hovel-shared
+
+networks:
+  hovel-shared:
+    external: true 

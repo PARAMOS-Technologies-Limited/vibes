@@ -4,15 +4,16 @@ A development environment API that spins up an AI agent-powered workspace, featu
 
 ## Overview
 
-Hovel is a Flask-based API server that provides a complete development environment management system. It includes advanced branch management capabilities that allow you to create isolated development environments for different features or experiments.
+Hovel is a Flask-based API server that provides a complete development environment management system. It includes advanced branch management capabilities that allow you to create isolated development environments for different features or experiments, with full Docker integration for automatic containerization.
 
 ## Features
 
 - **Main API Server**: Flask-based REST API with comprehensive endpoints
 - **Branch Management System**: Create isolated development environments for different features
-- **Docker Integration**: Full Docker support with automatic containerization
+- **Docker Integration**: Full Docker support with automatic containerization and Docker-in-Docker support
 - **Git Integration**: Automatic git branch creation and management
 - **Environment Isolation**: Each branch runs on its own port with complete environment isolation
+- **Automatic Container Management**: Start, stop, and monitor Docker containers for each branch
 - **Web Terminal Interface**: Embeddable terminal for web applications
 
 ## Quick Start
@@ -30,7 +31,7 @@ Hovel is a Flask-based API server that provides a complete development environme
 git clone <repository-url>
 cd hovel
 
-# Start the main API server
+# Start the main API server with Docker-in-Docker support
 docker-compose up
 ```
 
@@ -59,7 +60,62 @@ python server.py
 ### Branch Management Endpoints
 
 - `POST /api/branch` - Create a new development branch
+  ```json
+  {
+    "branch_name": "feature-new-ui",
+    "auto_start": true
+  }
+  ```
 - `GET /api/branches` - List all created branches
+- `POST /api/branch/{branch_name}/start` - Start Docker container for a branch
+- `POST /api/branch/{branch_name}/stop` - Stop Docker container for a branch
+- `GET /api/branch/{branch_name}/status` - Get branch container status
+- `GET /api/branch/{branch_name}/logs` - Get branch container logs
+- `POST /api/branch/{branch_name}/restart` - Restart branch container
+
+## Docker Integration
+
+### Docker-in-Docker Support
+
+The orchestrator container includes Docker-in-Docker (DinD) support, allowing it to:
+
+- **Automatically start cloned dev environments** when creating new branches
+- **Manage multiple isolated containers** for different development branches
+- **Monitor container status and logs** through the API
+- **Start/stop/restart containers** on demand
+
+### Container Management
+
+Each branch gets its own Docker container with:
+
+- **Unique port assignment** (8001, 8002, 8003, etc.)
+- **Isolated environment** with its own dependencies
+- **Automatic startup** when `auto_start: true` is specified
+- **Health monitoring** and log access
+
+### Example Usage
+
+```bash
+# Create a branch with auto-start
+curl -X POST http://localhost:8000/api/branch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "branch_name": "feature-new-ui",
+    "auto_start": true
+  }'
+
+# Check branch status
+curl http://localhost:8000/api/branch/feature-new-ui/status
+
+# Get branch logs
+curl http://localhost:8000/api/branch/feature-new-ui/logs
+
+# Stop branch container
+curl -X POST http://localhost:8000/api/branch/feature-new-ui/stop
+
+# Start branch container
+curl -X POST http://localhost:8000/api/branch/feature-new-ui/start
+```
 
 ## Documentation
 
@@ -83,35 +139,41 @@ hovel/
 ├── branches/                    # Branch environments (created dynamically)
 ├── docs/                        # Documentation
 │   └── BRANCH_README.md        # Branch management documentation
-├── server.py                    # Main API server
+├── server.py                    # Main API server with Docker integration
 ├── run_branch.py               # Branch runner script
 ├── test_branch_system.py       # System test script
+├── test_docker_functionality.py # Docker functionality test script
 ├── create_branch_compose.py    # Docker Compose generator
-├── docker-compose.yaml         # Main Docker Compose
+├── docker-compose.yaml         # Main Docker Compose with DinD support
 ├── docker-compose.branch.template.yaml
-├── Dockerfile                  # Docker configuration
+├── Dockerfile                  # Docker configuration with Docker installation
 ├── requirements.txt            # Python dependencies
 └── README.md                   # This file
 ```
 
 ## Development
 
-### Creating a New Branch
+### Creating a New Branch with Auto-Start
 
 ```bash
-# Create a new development branch
+# Create a new development branch with automatic container startup
 curl -X POST http://localhost:8000/api/branch \
   -H "Content-Type: application/json" \
-  -d '{"branch_name": "feature-new-ui"}'
+  -d '{
+    "branch_name": "feature-new-ui",
+    "auto_start": true
+  }'
 
-# Run the branch application
-python run_branch.py feature-new-ui
+# The branch will be created and its Docker container will start automatically
 ```
 
-### Testing
+### Testing Docker Functionality
 
 ```bash
-# Run the test suite
+# Run the Docker functionality test suite
+python test_docker_functionality.py
+
+# Run the general system test suite
 python test_branch_system.py
 ```
 
@@ -127,17 +189,20 @@ python test_branch_system.py
 ### Docker Configuration
 
 The project includes Docker support with:
-- Multi-stage builds for optimization
-- Git installation for branch management
-- Volume mounting for development
-- Environment variable configuration
+- **Docker-in-Docker (DinD)** for container management
+- **Privileged mode** for Docker daemon access
+- **Socket mounting** for Docker communication
+- **Multi-stage builds** for optimization
+- **Git installation** for branch management
+- **Volume mounting** for development
+- **Environment variable configuration**
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes
-4. Test your changes: `python test_branch_system.py`
+4. Test your changes: `python test_docker_functionality.py`
 5. Commit your changes: `git commit -am 'Add feature'`
 6. Push to the branch: `git push origin feature-name`
 7. Submit a pull request
