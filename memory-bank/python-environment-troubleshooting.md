@@ -224,7 +224,7 @@ cat branches/test-branch/.env
 
 ### 1. Branch Creation with Gemini CLI Support
 - When a new branch is created via the API, the `.gemini` settings directory is copied into the new branch's directory.
-- The `config.template.json` file is used to generate a branch-specific `.gemini/config.json` file.
+- The `settings.template.json` file is used to generate a branch-specific `.gemini/settings.json` file.
 - The API key provided in the branch creation request is injected into the config file, replacing both `YOUR_GEMINI_API_KEY_HERE` and `{{ GEMINI_API_KEY }}` placeholders.
 - This ensures each branch is ready for Gemini CLI usage with the correct API key.
 
@@ -238,7 +238,7 @@ cat branches/test-branch/.env
 
 ### 4. Error Handling and Security
 - If the API key is missing or invalid, branch creation is rejected with a clear error message.
-- The `.gemini/config.json` file is gitignored to prevent accidental exposure of API keys.
+- The `.gemini/settings.json` file is gitignored to prevent accidental exposure of API keys.
 
 ### 5. Best Practices
 - Always use a template config and inject secrets at runtime or branch creation.

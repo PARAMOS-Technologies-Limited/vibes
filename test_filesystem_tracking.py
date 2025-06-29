@@ -51,7 +51,7 @@ def test_filesystem_tracking():
         response = requests.post('http://localhost:8000/api/branch', 
                                json={
                                    'branch_name': test_branch_name,
-                                   'gemini_api_key': 'test-api-key-for-config'
+                                   'gemini_api_key': 'api-key'
                                })
         
         if response.status_code == 201:
@@ -182,7 +182,7 @@ def test_server_restart_persistence():
         response = requests.post('http://localhost:8000/api/branch', 
                                json={
                                    'branch_name': persistent_branch_name,
-                                   'gemini_api_key': 'test-api-key-for-config'
+                                   'gemini_api_key': 'api-key'
                                })
         
         if response.status_code == 201:

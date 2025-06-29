@@ -6,7 +6,7 @@ This directory contains the configuration for the [Google Gemini CLI](https://gi
 
 ```
 .gemini/
-├── config.json     # Main configuration file
+├── settings.json     # Main configuration file
 └── README.md       # This documentation file
 ```
 
@@ -15,7 +15,7 @@ This directory contains the configuration for the [Google Gemini CLI](https://gi
 ### API Key Setup
 
 1. **Get your API key** from [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. **Replace the placeholder** in `config.json`:
+2. **Replace the placeholder** in `settings.json`:
    ```json
    "api_key": "YOUR_ACTUAL_API_KEY_HERE"
    ```
@@ -33,7 +33,7 @@ This directory contains the configuration for the [Google Gemini CLI](https://gi
 
 ```bash
 # Initialize Gemini CLI with this config
-gemini init --config .gemini/config.json
+gemini init --config .gemini/settings.json
 
 # Use project-specific templates
 gemini template branch_creation --branch_name "feature-new-ui" --description "New UI components"
@@ -90,7 +90,7 @@ gemini template api_documentation \
 
 ## 🛠️ Development Workflow
 
-1. **Setup**: Configure your API key in `config.json`
+1. **Setup**: Configure your API key in `settings.json`
 2. **Branch Creation**: Use templates for consistent branch creation
 3. **Code Review**: Get AI assistance for code reviews
 4. **Documentation**: Generate API documentation automatically

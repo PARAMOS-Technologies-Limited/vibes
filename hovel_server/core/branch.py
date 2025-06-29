@@ -22,21 +22,21 @@ def duplicate_app_directory(branch_name, port, api_key=None):
         logger.info(f"Duplicated app directory to {target_dir}")
         
         # Create branch-specific environment file
-        create_branch_env_file(branch_name, target_dir, port)
+        create_branch_env_file(branch_name, target_dir, port, api_key)
         
         # Create branch-specific Docker Compose file
         create_branch_docker_compose(branch_name, target_dir, port)
         
         # Create branch-specific Gemini config if API key is provided
         if api_key:
-            gemini.create_branch_gemini_config(branch_name, target_dir, api_key)
+            gemini.create_branch_gemini_settings(branch_name, target_dir, api_key)
         
         return target_dir
     except Exception as e:
         logger.error(f"Error duplicating app directory: {e}")
         raise
 
-def create_branch_env_file(branch_name, target_dir, port):
+def create_branch_env_file(branch_name, target_dir, port, api_key=None):
     """Create environment file for the branch"""
     try:
         env_content = f"""# Environment variables for branch: {branch_name}
@@ -45,6 +45,10 @@ FLASK_ENV=development
 PORT={port}
 BRANCH_NAME={branch_name}
 """
+        
+        # Add Gemini API key if provided
+        if api_key:
+            env_content += f"GEMINI_API_KEY={api_key}\n"
         
         env_file = os.path.join(target_dir, '.env')
         with open(env_file, 'w') as f:

@@ -66,8 +66,8 @@ def create_branch():
             'status': 'created',
             'git_branch': branch_name,
             'gemini_api_validated': True,
-            'gemini_config_created': True,
-            'gemini_config_path': f'{app_dir}/.gemini/config.json'
+            'gemini_settings_created': True,
+            'gemini_settings_path': f'{app_dir}/.gemini/settings.json'
         }
         utils.save_branch_info(branch_name, branch_info)
         
@@ -91,8 +91,8 @@ def create_branch():
             'auto_start': auto_start,
             'build_task_id': task_id,
             'gemini_api_validated': True,
-            'gemini_config_created': True,
-            'gemini_config_path': f'{app_dir}/.gemini/config.json',
+            'gemini_settings_created': True,
+            'gemini_settings_path': f'{app_dir}/.gemini/settings.json',
             'timestamp': datetime.utcnow().isoformat() + 'Z'
         }
         
