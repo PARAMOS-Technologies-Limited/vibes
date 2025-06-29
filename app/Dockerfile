@@ -8,6 +8,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
+# Install gemini-cli globally
+RUN npm install -g @google/gemini-cli
+
 # Copy application code
 COPY . .
 
