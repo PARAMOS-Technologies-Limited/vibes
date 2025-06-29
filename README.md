@@ -128,17 +128,27 @@ Complete guide to the branch management system, including:
 - Git workflow integration
 - API usage examples
 
+### 🚀 [Postman Collection Setup](docs/POSTMAN_SETUP.md)
+
+Complete guide for testing the APIs using Postman, including:
+- Import instructions for the Postman collection
+- Environment variable setup
+- API endpoint documentation
+- Usage examples and troubleshooting
+- Collection file: `Hovel_API_Collection.json`
+
 ## Project Structure
 
 ```
 hovel/
 ├── app/                          # Main application directory
-│   ├── app.py                   # Flask application
-│   ├── requirements.txt         # Python dependencies
-│   └── docker-compose.template.yaml
+│   ├── app.js                   # Node.js Express application
+│   ├── package.json             # Node.js dependencies
+│   └── docker-compose.branch.template.yaml
 ├── branches/                    # Branch environments (created dynamically)
 ├── docs/                        # Documentation
-│   └── BRANCH_README.md        # Branch management documentation
+│   ├── BRANCH_README.md        # Branch management documentation
+│   └── POSTMAN_SETUP.md        # Postman collection setup guide
 ├── server.py                    # Main API server with Docker integration
 ├── run_branch.py               # Branch runner script
 ├── test_branch_system.py       # System test script
@@ -148,6 +158,7 @@ hovel/
 ├── docker-compose.branch.template.yaml
 ├── Dockerfile                  # Docker configuration with Docker installation
 ├── requirements.txt            # Python dependencies
+├── Hovel_API_Collection.json   # Postman collection for API testing
 └── README.md                   # This file
 ```
 

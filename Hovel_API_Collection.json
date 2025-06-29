@@ -1,0 +1,386 @@
+{
+  "info": {
+    "_postman_id": "hovel-api-collection",
+    "name": "Hovel API Collection",
+    "description": "Complete API collection for the Hovel project including both the main server API and branch app APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Main Server API",
+      "description": "Primary server API endpoints for managing branches and system operations",
+      "item": [
+        {
+          "name": "Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Get server information and status"
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/health",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Check if the server is healthy and running"
+          },
+          "response": []
+        },
+        {
+          "name": "API Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/status",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "status"
+              ]
+            },
+            "description": "Get API status and list of available endpoints"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sample Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/data",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "data"
+              ]
+            },
+            "description": "Get sample data from the server"
+          },
+          "response": []
+        },
+        {
+          "name": "Process Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"test data\",\n  \"value\": 123,\n  \"description\": \"Sample data for processing\"\n}"
+            },
+            "url": {
+              "raw": "{{server_base_url}}/api/process",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "process"
+              ]
+            },
+            "description": "Process incoming data and return processed result"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Branch Management",
+      "description": "Endpoints for creating, managing, and controlling branch environments",
+      "item": [
+        {
+          "name": "Create Branch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"branch_name\": \"feature-branch\",\n  \"auto_start\": true\n}"
+            },
+            "url": {
+              "raw": "{{server_base_url}}/api/branch",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "branch"
+              ]
+            },
+            "description": "Create a new branch with duplicated app directory and optional auto-start"
+          },
+          "response": []
+        },
+        {
+          "name": "List Branches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/branches",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "branches"
+              ]
+            },
+            "description": "List all created branches with their configurations"
+          },
+          "response": []
+        },
+        {
+          "name": "Start Branch",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/start",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "branch",
+                "{{branch_name}}",
+                "start"
+              ]
+            },
+            "description": "Start Docker container for a specific branch"
+          },
+          "response": []
+        },
+        {
+          "name": "Stop Branch",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/stop",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "branch",
+                "{{branch_name}}",
+                "stop"
+              ]
+            },
+            "description": "Stop Docker container for a specific branch"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Branch Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/status",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "branch",
+                "{{branch_name}}",
+                "status"
+              ]
+            },
+            "description": "Get the status of a branch's Docker container"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Branch Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/logs?lines=50",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "branch",
+                "{{branch_name}}",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "lines",
+                  "value": "50",
+                  "description": "Number of log lines to retrieve"
+                }
+              ]
+            },
+            "description": "Get logs from a branch's Docker container"
+          },
+          "response": []
+        },
+        {
+          "name": "Restart Branch",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/restart",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "branch",
+                "{{branch_name}}",
+                "restart"
+              ]
+            },
+            "description": "Restart Docker container for a specific branch"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Branch",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{server_base_url}}/api/branch/{{branch_name}}",
+              "host": [
+                "{{server_base_url}}"
+              ],
+              "path": [
+                "api",
+                "branch",
+                "{{branch_name}}"
+              ]
+            },
+            "description": "Completely cleanup and delete a branch environment"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Branch App API",
+      "description": "API endpoints for individual branch applications (Node.js Express apps)",
+      "item": [
+        {
+          "name": "Branch Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{branch_base_url}}/",
+              "host": [
+                "{{branch_base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Get branch app information and status"
+          },
+          "response": []
+        },
+        {
+          "name": "Branch Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{branch_base_url}}/health",
+              "host": [
+                "{{branch_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Check if the branch app is healthy and running"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "server_base_url",
+      "value": "http://localhost:8000",
+      "type": "string",
+      "description": "Base URL for the main server API"
+    },
+    {
+      "key": "branch_base_url",
+      "value": "http://localhost:8001",
+      "type": "string",
+      "description": "Base URL for branch app APIs (port will vary by branch)"
+    },
+    {
+      "key": "branch_name",
+      "value": "feature-branch",
+      "type": "string",
+      "description": "Name of the branch to test (used in branch-specific endpoints)"
+    }
+  ]
+}
