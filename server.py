@@ -31,16 +31,74 @@ app.config['JSON_SORT_KEYS'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 # Track branch ports (in a real app, this would be in a database)
-BRANCH_PORTS = {}
 BASE_PORT = 8000
+
+def get_branch_info(branch_name):
+    """Get branch information from the .branch file"""
+    try:
+        branch_file = f'branches/{branch_name}/.branch'
+        if os.path.exists(branch_file):
+            with open(branch_file, 'r') as f:
+                return json.load(f)
+        return None
+    except Exception as e:
+        logger.error(f"Error reading branch info for {branch_name}: {e}")
+        return None
+
+def save_branch_info(branch_name, branch_info):
+    """Save branch information to the .branch file"""
+    try:
+        branch_file = f'branches/{branch_name}/.branch'
+        os.makedirs(os.path.dirname(branch_file), exist_ok=True)
+        with open(branch_file, 'w') as f:
+            json.dump(branch_info, f, indent=2)
+        logger.info(f"Saved branch info to {branch_file}")
+    except Exception as e:
+        logger.error(f"Error saving branch info for {branch_name}: {e}")
+        raise
+
+def get_all_branches():
+    """Scan the filesystem to get all existing branches"""
+    branches = {}
+    try:
+        if not os.path.exists('branches'):
+            return branches
+        
+        for branch_name in os.listdir('branches'):
+            branch_dir = f'branches/{branch_name}'
+            if os.path.isdir(branch_dir):
+                branch_info = get_branch_info(branch_name)
+                if branch_info:
+                    branches[branch_name] = branch_info
+        return branches
+    except Exception as e:
+        logger.error(f"Error scanning branches: {e}")
+        return branches
 
 def get_next_available_port():
     """Get the next available port starting from BASE_PORT"""
-    used_ports = set(BRANCH_PORTS.values())
-    port = BASE_PORT + 1
-    while port in used_ports:
-        port += 1
-    return port
+    try:
+        # Get all existing branches and their ports
+        branches = get_all_branches()
+        used_ports = {branch_info.get('port', 0) for branch_info in branches.values()}
+        
+        port = BASE_PORT + 1
+        while port in used_ports:
+            port += 1
+        return port
+    except Exception as e:
+        logger.error(f"Error getting next available port: {e}")
+        # Fallback to simple increment
+        return BASE_PORT + 1
+
+def branch_exists(branch_name):
+    """Check if a branch exists by looking for its .branch file"""
+    try:
+        branch_file = f'branches/{branch_name}/.branch'
+        return os.path.exists(branch_file)
+    except Exception as e:
+        logger.error(f"Error checking if branch {branch_name} exists: {e}")
+        return False
 
 def create_git_branch(branch_name):
     """Create a new git branch in the app directory"""
@@ -337,15 +395,13 @@ def cleanup_branch_environment(branch_name):
         except Exception as e:
             logger.warning(f"Error removing image for branch {branch_name}: {e}")
         
-        # Step 4: Delete branch directory and all files
+        # Step 4: Delete branch directory and all files (including .branch file)
         if os.path.exists(branch_dir):
             shutil.rmtree(branch_dir)
             logger.info(f"Deleted branch directory: {branch_dir}")
         
-        # Step 5: Remove from tracking
-        if branch_name in BRANCH_PORTS:
-            del BRANCH_PORTS[branch_name]
-            logger.info(f"Removed branch {branch_name} from tracking")
+        # Step 5: Branch tracking is automatically removed when directory is deleted
+        logger.info(f"Removed branch {branch_name} from tracking")
         
         # Step 6: Try to delete git branch (optional)
         try:
@@ -495,12 +551,11 @@ def create_branch():
             return jsonify({'error': 'branch_name cannot be empty'}), 400
         
         # Check if branch already exists
-        if branch_name in BRANCH_PORTS:
+        if branch_exists(branch_name):
             return jsonify({'error': f'Branch {branch_name} already exists'}), 409
         
-        # Get next available port and store it first
+        # Get next available port
         port = get_next_available_port()
-        BRANCH_PORTS[branch_name] = port
         
         # Create git branch
         create_git_branch(branch_name)
@@ -511,14 +566,34 @@ def create_branch():
         # Create branch configuration
         config = create_branch_config(branch_name, port, app_dir)
         
+        # Save complete branch information to .branch file
+        branch_info = {
+            'branch_name': branch_name,
+            'port': port,
+            'app_directory': app_dir,
+            'created_at': datetime.utcnow().isoformat() + 'Z',
+            'status': 'created',
+            'git_branch': branch_name,
+            'gemini_api_validated': True,
+            'gemini_config_created': True,
+            'gemini_config_path': f'{app_dir}/.gemini/config.json'
+        }
+        save_branch_info(branch_name, branch_info)
+        
         # Auto-start container if requested
         container_started = False
         if auto_start:
             container_started = start_branch_container(branch_name)
             if container_started:
                 logger.info(f"Auto-started Docker container for branch {branch_name}")
+                # Update branch info with container status
+                branch_info['container_started'] = True
+                branch_info['status'] = 'running'
+                save_branch_info(branch_name, branch_info)
             else:
                 logger.warning(f"Failed to auto-start Docker container for branch {branch_name}")
+                branch_info['container_started'] = False
+                save_branch_info(branch_name, branch_info)
         
         logger.info(f"Created branch {branch_name} on port {port}")
         
@@ -548,12 +623,10 @@ def list_branches():
     """List all created branches"""
     try:
         branches = []
-        for branch_name, port in BRANCH_PORTS.items():
-            config_file = f'branches/{branch_name}/branch_config.json'
-            if os.path.exists(config_file):
-                with open(config_file, 'r') as f:
-                    config = json.load(f)
-                    branches.append(config)
+        all_branches = get_all_branches()
+        
+        for branch_name, branch_info in all_branches.items():
+            branches.append(branch_info)
         
         return jsonify({
             'branches': branches,
@@ -569,11 +642,18 @@ def list_branches():
 def start_branch(branch_name):
     """Start Docker container for a branch"""
     try:
-        if branch_name not in BRANCH_PORTS:
+        if not branch_exists(branch_name):
             return jsonify({'error': f'Branch {branch_name} not found'}), 404
         
         success = start_branch_container(branch_name)
         if success:
+            # Update branch status in .branch file
+            branch_info = get_branch_info(branch_name)
+            if branch_info:
+                branch_info['status'] = 'running'
+                branch_info['container_started'] = True
+                save_branch_info(branch_name, branch_info)
+            
             return jsonify({
                 'message': f'Branch {branch_name} started successfully',
                 'branch_name': branch_name,
@@ -591,11 +671,18 @@ def start_branch(branch_name):
 def stop_branch(branch_name):
     """Stop Docker container for a branch"""
     try:
-        if branch_name not in BRANCH_PORTS:
+        if not branch_exists(branch_name):
             return jsonify({'error': f'Branch {branch_name} not found'}), 404
         
         success = stop_branch_container(branch_name)
         if success:
+            # Update branch status in .branch file
+            branch_info = get_branch_info(branch_name)
+            if branch_info:
+                branch_info['status'] = 'stopped'
+                branch_info['container_started'] = False
+                save_branch_info(branch_name, branch_info)
+            
             return jsonify({
                 'message': f'Branch {branch_name} stopped successfully',
                 'branch_name': branch_name,
@@ -613,14 +700,18 @@ def stop_branch(branch_name):
 def get_branch_status(branch_name):
     """Get the status of a branch's Docker container"""
     try:
-        if branch_name not in BRANCH_PORTS:
+        if not branch_exists(branch_name):
             return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        branch_info = get_branch_info(branch_name)
+        if not branch_info:
+            return jsonify({'error': f'Branch {branch_name} info not found'}), 404
         
         status = get_branch_container_status(branch_name)
         return jsonify({
             'branch_name': branch_name,
             'container_status': status,
-            'port': BRANCH_PORTS.get(branch_name),
+            'port': branch_info.get('port'),
             'timestamp': datetime.utcnow().isoformat() + 'Z'
         }), 200
         
@@ -632,7 +723,7 @@ def get_branch_status(branch_name):
 def get_branch_logs_endpoint(branch_name):
     """Get logs from a branch's Docker container"""
     try:
-        if branch_name not in BRANCH_PORTS:
+        if not branch_exists(branch_name):
             return jsonify({'error': f'Branch {branch_name} not found'}), 404
         
         lines = request.args.get('lines', 50, type=int)
@@ -656,7 +747,7 @@ def get_branch_logs_endpoint(branch_name):
 def restart_branch(branch_name):
     """Restart Docker container for a branch"""
     try:
-        if branch_name not in BRANCH_PORTS:
+        if not branch_exists(branch_name):
             return jsonify({'error': f'Branch {branch_name} not found'}), 404
         
         # Stop the container first
@@ -667,6 +758,13 @@ def restart_branch(branch_name):
         # Start the container
         start_success = start_branch_container(branch_name)
         if start_success:
+            # Update branch status in .branch file
+            branch_info = get_branch_info(branch_name)
+            if branch_info:
+                branch_info['status'] = 'running'
+                branch_info['container_started'] = True
+                save_branch_info(branch_name, branch_info)
+            
             return jsonify({
                 'message': f'Branch {branch_name} restarted successfully',
                 'branch_name': branch_name,
@@ -684,7 +782,7 @@ def restart_branch(branch_name):
 def delete_branch(branch_name):
     """Completely cleanup and delete a branch environment"""
     try:
-        if branch_name not in BRANCH_PORTS:
+        if not branch_exists(branch_name):
             return jsonify({'error': f'Branch {branch_name} not found'}), 404
         
         success = cleanup_branch_environment(branch_name)
@@ -728,6 +826,22 @@ def internal_error(error):
         'timestamp': datetime.utcnow().isoformat() + 'Z'
     }), 500
 
+def initialize_branch_system():
+    """Initialize the branch system by scanning for existing branches"""
+    try:
+        logger.info("Initializing branch system...")
+        branches = get_all_branches()
+        logger.info(f"Found {len(branches)} existing branches: {list(branches.keys())}")
+        
+        # Log details of each found branch
+        for branch_name, branch_info in branches.items():
+            logger.info(f"Branch: {branch_name}, Port: {branch_info.get('port')}, Status: {branch_info.get('status')}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error initializing branch system: {e}")
+        return False
+
 def main():
     """Main function to run the server"""
     port = int(os.environ.get('PORT', 8000))
@@ -736,6 +850,9 @@ def main():
     
     logger.info(f"Starting server on {host}:{port}")
     logger.info(f"Debug mode: {debug}")
+    
+    # Initialize the branch system
+    initialize_branch_system()
     
     try:
         app.run(host=host, port=port, debug=debug)

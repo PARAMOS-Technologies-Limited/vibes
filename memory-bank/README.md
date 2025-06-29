@@ -35,6 +35,8 @@ This directory contains comprehensive documentation and lessons learned for AI a
 2. **Verify unique ports** are assigned to each branch
 3. **Check .env files** for correct PORT assignments
 4. **Test branch isolation** by running multiple branches simultaneously
+5. **Check .branch files** for complete branch metadata and persistence
+6. **Restart server** to verify branch persistence across restarts
 
 ### When Managing Docker Containers (NEW)
 1. **Auto-start containers** by setting `auto_start: true` in branch creation
@@ -42,6 +44,13 @@ This directory contains comprehensive documentation and lessons learned for AI a
 3. **Access logs** using `/api/branch/{name}/logs` endpoint
 4. **Start/stop containers** using dedicated endpoints
 5. **Verify Docker-in-Docker** is working properly
+
+### When Managing Filesystem-Based Tracking (NEW)
+1. **Check .branch files** in each branch directory for metadata
+2. **Verify persistence** by restarting the server and checking if branches are still listed
+3. **Monitor branch status** updates in .branch files when containers start/stop
+4. **Use filesystem scanning** to discover existing branches on server startup
+5. **Test branch cleanup** ensures .branch files are properly removed
 
 ## 🔍 Search Keywords
 
@@ -55,6 +64,8 @@ Use these keywords to quickly find relevant information:
 - **Architecture**: System design, directory structure, technology stack
 - **Port conflicts**: Branch management, unique port assignment, environment isolation
 - **Container management**: Docker containers, auto-start, monitoring, logs
+- **Filesystem tracking**: .branch files, persistence, server restart, branch metadata
+- **Branch persistence**: Filesystem-based tracking, .branch files, startup scanning
 
 ## 📖 How to Use This Knowledge Base
 
@@ -87,6 +98,48 @@ Use these keywords to quickly find relevant information:
 4. **Container Lifecycle**: ✅ **COMPLETED** - Start, stop, restart operations available
 
 ## 🎉 Recent Achievements
+
+### Filesystem-Based Branch Tracking - COMPLETED ✅
+**Problem Solved:** Branch tracking was using in-memory variables (`BRANCH_PORTS`), which meant branch information was lost when the server restarted.
+
+**Solution Implemented:**
+1. **Removed in-memory tracking**: Eliminated the `BRANCH_PORTS` variable
+2. **Added .branch files**: Each branch directory now contains a `.branch` file with complete branch information
+3. **Filesystem scanning**: System scans the filesystem on startup to discover existing branches
+4. **Persistent storage**: Branch information persists across server restarts
+5. **Complete branch metadata**: .branch files contain port, status, creation time, and other details
+
+**Code Changes:**
+```python
+# Before: In-memory tracking
+BRANCH_PORTS = {}  # Lost on server restart
+
+# After: Filesystem-based tracking
+def get_branch_info(branch_name):
+    branch_file = f'branches/{branch_name}/.branch'
+    if os.path.exists(branch_file):
+        with open(branch_file, 'r') as f:
+            return json.load(f)
+    return None
+
+def save_branch_info(branch_name, branch_info):
+    branch_file = f'branches/{branch_name}/.branch'
+    with open(branch_file, 'w') as f:
+        json.dump(branch_info, f, indent=2)
+```
+
+**Benefits:**
+- 🚀 **Persistent across restarts**: Branch information survives server restarts
+- 🔍 **Self-discovering**: System automatically finds existing branches on startup
+- 📊 **Complete metadata**: Each .branch file contains comprehensive branch information
+- 🛡️ **Reliable**: No data loss due to memory issues or crashes
+- 🔄 **Scalable**: Works with any number of branches without memory constraints
+
+**Testing:**
+- ✅ Created `test_filesystem_tracking.py` to verify functionality
+- ✅ Tested branch creation, listing, status updates, and deletion
+- ✅ Verified persistence across server restart simulation
+- ✅ Confirmed .branch files are properly created and removed
 
 ### Port Conflict Resolution - COMPLETED ✅
 **Problem Solved:** Multiple branches were being created with the same port (8000), causing conflicts.
