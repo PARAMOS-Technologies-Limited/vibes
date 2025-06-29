@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "{{PORT}}:3000"
+      - "{{PORT_TTYD}}:{{PORT_TTYD}}"
     env_file:
       - .env
     environment:

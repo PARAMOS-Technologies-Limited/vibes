@@ -32,6 +32,17 @@ When trying to run a Flask application (`server.py`), encountered multiple issue
 - Cannot install packages system-wide
 - Virtual environment creation fails due to SSL issues
 
+**Solutions:**
+1. **Use system Python**: `/usr/local/bin/python3.11 server.py` (RECOMMENDED)
+2. Use specific Python binary: `/usr/local/bin/python3.11 server.py`
+3. Override with flag: `pip install --break-system-packages flask`
+
+**IMPORTANT UPDATE: Always use system Python instead of virtual environments**
+- Virtual environments have SSL issues in this containerized environment
+- System Python has all required packages pre-installed
+- Use `/usr/local/bin/python3.11` for all Python operations
+- Avoid `source venv/bin/activate` as it causes SSL connection problems
+
 ### 4. Port Conflicts in Branch Management
 **Symptoms:**
 - Multiple branches created with same port (8000)
@@ -189,8 +200,11 @@ python3 -c "import flask; print('Flask found')"
 # Install SSL support (if needed)
 apt-get update && apt-get install -y libssl-dev python3-openssl ca-certificates
 
-# Run server with specific Python binary
+# Run server with system Python (RECOMMENDED)
 /usr/local/bin/python3.11 server.py
+
+# Run test scripts with system Python
+/usr/local/bin/python3.11 test_script.py
 
 # Test branch creation with unique ports
 curl -X POST http://localhost:8000/api/branch \
@@ -198,9 +212,10 @@ curl -X POST http://localhost:8000/api/branch \
   -d '{"branch_name": "test-branch"}'
 
 # Verify port assignments
-curl -s http://localhost:8000/api/branches
 cat branches/test-branch/.env
 ```
+
+**IMPORTANT: Always use system Python (`/usr/local/bin/python3.11`) instead of virtual environments**
 
 ## Prevention Strategies
 

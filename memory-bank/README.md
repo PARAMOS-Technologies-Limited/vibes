@@ -16,12 +16,13 @@ This directory contains comprehensive documentation and lessons learned for AI a
 ### When Starting the Server
 1. Check [Flask Server Startup Guide](flask-server-startup-guide.md) for the correct startup sequence
 2. If you encounter ModuleNotFoundError, refer to [Python Environment Troubleshooting](python-environment-troubleshooting.md)
-3. Use `/usr/local/bin/python3.11 server.py` as the recommended startup command
+3. **Use `/usr/local/bin/python3.11 server.py` as the recommended startup command**
+4. **Always use system Python instead of virtual environments**
 
 ### When Troubleshooting Issues
 1. **ModuleNotFoundError**: Check Python installations and use specific binary paths
 2. **SSL Issues**: Install system SSL packages (libssl-dev, python3-openssl, ca-certificates)
-3. **External Environment Management**: Use virtual environments or specific Python binaries
+3. **External Environment Management**: **Use system Python instead of virtual environments**
 4. **Port Conflicts**: Verify unique port assignment in branch .env files
 5. **Docker Issues**: Check Docker daemon status and socket permissions
 
@@ -60,11 +61,25 @@ This directory contains comprehensive documentation and lessons learned for AI a
 5. **Test individual modules**: Use pytest for core logic, integration tests for API
 6. **Register blueprints**: Update `hovel_server/api/__init__.py` for new endpoints
 
+### When Managing Terminal Sessions (NEW)
+1. **Start Gemini sessions** using `/api/branch/{name}/gemini-session` endpoint
+2. **Access ttyd terminals** via the returned URL (port = branch_port + 1000)
+3. **Verify session metadata** is saved in .branch files
+4. **Check container status** before starting sessions
+5. **Use gemini-cli** which is pre-installed in containers
+
+### When Working with Python Environment (NEW)
+1. **Always use system Python**: `/usr/local/bin/python3.11` for all operations
+2. **Avoid virtual environments**: They have SSL issues in containerized environments
+3. **System packages**: All required packages are pre-installed in system Python
+4. **Testing scripts**: Use `/usr/local/bin/python3.11 script.py` for test execution
+5. **Server startup**: Use `/usr/local/bin/python3.11 server.py` for Flask server
+
 ## 🔍 Search Keywords
 
 Use these keywords to quickly find relevant information:
 
-- **Python environment**: Environment setup, SSL issues, virtual environments
+- **Python environment**: Environment setup, SSL issues, **system Python usage**
 - **Flask server**: Startup commands, troubleshooting, configuration
 - **Docker**: Container setup, SSL dependencies, environment isolation, Docker-in-Docker
 - **API endpoints**: REST API, branch management, health checks, container management
@@ -76,6 +91,9 @@ Use these keywords to quickly find relevant information:
 - **Branch persistence**: Filesystem-based tracking, .branch files, startup scanning
 - **Modular architecture**: Package structure, separation of concerns, blueprints, core modules
 - **Module development**: API layer, core layer, business logic, Flask blueprints
+- **Terminal sessions**: ttyd, gemini-cli, web terminals, session management
+- **Gemini integration**: gemini-cli, API sessions, terminal access
+- **System Python**: Use system Python instead of virtual environments, SSL issues
 
 ## 📖 How to Use This Knowledge Base
 
@@ -114,6 +132,13 @@ Use these keywords to quickly find relevant information:
 4. **Blueprint Registration**: Always register new blueprints in `hovel_server/api/__init__.py`
 5. **Configuration Management**: Use `hovel_server/config.py` for app-wide settings
 6. **Middleware Extension**: Add request/response processing in `hovel_server/middleware.py`
+
+### When Working with Terminal Sessions (NEW)
+1. **Session Management**: Start ttyd sessions with gemini-cli via API
+2. **Port Assignment**: TTYD ports are automatically assigned (branch_port + 1000)
+3. **Container Requirements**: Branch container must be running before starting sessions
+4. **Session Persistence**: Session details are saved in .branch files
+5. **Error Handling**: Proper validation for container status and branch existence
 
 ## 🎉 Recent Achievements
 
@@ -232,6 +257,49 @@ def save_branch_info(branch_name, branch_info):
 - 🔄 Automatic container startup and management
 - 📊 Real-time container status and log monitoring
 - 🚀 Scalable development environment orchestration
+
+### System Python Usage - COMPLETED ✅
+**Problem Solved:** Virtual environments had SSL issues preventing package installation and causing connection errors.
+
+**Solution Implemented:**
+1. **Identified SSL issues**: Virtual environments couldn't connect to PyPI due to SSL module problems
+2. **Switched to system Python**: `/usr/local/bin/python3.11` has all required packages pre-installed
+3. **Updated documentation**: All guides now recommend system Python usage
+4. **Tested successfully**: All operations work correctly with system Python
+
+**Benefits:**
+- 🚀 **No SSL issues**: System Python works without SSL connection problems
+- 📦 **Pre-installed packages**: All required packages are already available
+- 🔧 **Simplified workflow**: No need to manage virtual environments
+- ✅ **Reliable operation**: Consistent behavior across all Python operations
+- 📚 **Clear documentation**: Updated memory bank with system Python guidance
+
+**Testing:**
+- ✅ Server startup works with system Python
+- ✅ Test scripts execute without SSL errors
+- ✅ Package imports work correctly
+- ✅ All API endpoints function properly
+
+### Docker Compose PORT_TTYD Fix - COMPLETED ✅
+**Problem Solved:** Docker Compose files were being generated with unsubstituted `{{PORT_TTYD}}` variables, causing build failures.
+
+**Solution Implemented:**
+1. **Identified missing substitution**: `create_branch_docker_compose` function wasn't handling `{{PORT_TTYD}}`
+2. **Added TTYD port calculation**: TTYD port = branch port + 1000
+3. **Updated template substitution**: Added `{{PORT_TTYD}}` replacement in Docker Compose generation
+4. **Verified fix**: Docker Compose files now generate correctly with proper port mappings
+
+**Benefits:**
+- 🐳 **Successful builds**: Docker containers build without port allocation errors
+- 🔧 **Proper port mapping**: TTYD ports are correctly mapped (branch_port + 1000)
+- ✅ **Consistent port assignment**: All branches get unique TTYD ports
+- 🚀 **Working Gemini sessions**: TTYD sessions can now start properly
+
+**Testing:**
+- ✅ Docker Compose files generate with correct port substitutions
+- ✅ No more "invalid hostPort: {{PORT_TTYD}}" errors
+- ✅ TTYD ports are properly calculated and assigned
+- ✅ Branch creation process works end-to-end
 
 ## 🔄 Maintenance
 

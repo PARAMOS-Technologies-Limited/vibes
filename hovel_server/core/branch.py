@@ -70,9 +70,13 @@ def create_branch_docker_compose(branch_name, target_dir, port):
         with open(template_path, 'r') as f:
             template_content = f.read()
         
+        # Calculate TTYD port (branch port + 1000)
+        ttyd_port = port + 1000
+        
         # Replace placeholders with actual values
         compose_content = template_content.replace('{{BRANCH_NAME}}', branch_name)
         compose_content = compose_content.replace('{{PORT}}', str(port))
+        compose_content = compose_content.replace('{{PORT_TTYD}}', str(ttyd_port))
         
         compose_file = os.path.join(target_dir, 'docker-compose.yaml')
         with open(compose_file, 'w') as f:
