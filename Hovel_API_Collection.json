@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "hovel-api-collection",
     "name": "Hovel API Collection",
-    "description": "Complete API collection for the Hovel project including both the main server API and branch app APIs",
+    "description": "Complete API collection for the Hovel project with URL path-based folder structure",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "12345678"
   },
@@ -116,187 +116,199 @@
       ]
     },
     {
-      "name": "Branch Management",
-      "description": "Endpoints for creating, managing, and controlling branch environments",
+      "name": "api",
+      "description": "API endpoints organized by URL path structure",
       "item": [
         {
-          "name": "Create Branch",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"branch_name\": \"feature-branch\",\n  \"auto_start\": true\n}"
+          "name": "branch",
+          "description": "Branch management endpoints",
+          "item": [
+            {
+              "name": "create",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"branch_name\": \"feature-branch\",\n  \"auto_start\": true\n}"
+                },
+                "url": {
+                  "raw": "{{server_base_url}}/api/branch",
+                  "host": [
+                    "{{server_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "branch"
+                  ]
+                },
+                "description": "Create a new branch with duplicated app directory and optional auto-start"
+              },
+              "response": []
             },
-            "url": {
-              "raw": "{{server_base_url}}/api/branch",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "branch"
-              ]
+            {
+              "name": "list",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{server_base_url}}/api/branches",
+                  "host": [
+                    "{{server_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "branches"
+                  ]
+                },
+                "description": "List all created branches with their configurations"
+              },
+              "response": []
             },
-            "description": "Create a new branch with duplicated app directory and optional auto-start"
-          },
-          "response": []
-        },
-        {
-          "name": "List Branches",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{server_base_url}}/api/branches",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "branches"
-              ]
-            },
-            "description": "List all created branches with their configurations"
-          },
-          "response": []
-        },
-        {
-          "name": "Start Branch",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/start",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "branch",
-                "{{branch_name}}",
-                "start"
-              ]
-            },
-            "description": "Start Docker container for a specific branch"
-          },
-          "response": []
-        },
-        {
-          "name": "Stop Branch",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/stop",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "branch",
-                "{{branch_name}}",
-                "stop"
-              ]
-            },
-            "description": "Stop Docker container for a specific branch"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Branch Status",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/status",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "branch",
-                "{{branch_name}}",
-                "status"
-              ]
-            },
-            "description": "Get the status of a branch's Docker container"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Branch Logs",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/logs?lines=50",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "branch",
-                "{{branch_name}}",
-                "logs"
-              ],
-              "query": [
+            {
+              "name": ":branch-name",
+              "description": "Branch-specific operations",
+              "item": [
                 {
-                  "key": "lines",
-                  "value": "50",
-                  "description": "Number of log lines to retrieve"
+                  "name": "start",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/start",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}",
+                        "start"
+                      ]
+                    },
+                    "description": "Start Docker container for a specific branch"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "stop",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/stop",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}",
+                        "stop"
+                      ]
+                    },
+                    "description": "Stop Docker container for a specific branch"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "status",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/status",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}",
+                        "status"
+                      ]
+                    },
+                    "description": "Get the status of a branch's Docker container"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "logs",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/logs?lines=50",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}",
+                        "logs"
+                      ],
+                      "query": [
+                        {
+                          "key": "lines",
+                          "value": "50",
+                          "description": "Number of log lines to retrieve"
+                        }
+                      ]
+                    },
+                    "description": "Get logs from a branch's Docker container"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "restart",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/restart",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}",
+                        "restart"
+                      ]
+                    },
+                    "description": "Restart Docker container for a specific branch"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "delete",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}"
+                      ]
+                    },
+                    "description": "Completely cleanup and delete a branch environment"
+                  },
+                  "response": []
                 }
               ]
-            },
-            "description": "Get logs from a branch's Docker container"
-          },
-          "response": []
-        },
-        {
-          "name": "Restart Branch",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{server_base_url}}/api/branch/{{branch_name}}/restart",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "branch",
-                "{{branch_name}}",
-                "restart"
-              ]
-            },
-            "description": "Restart Docker container for a specific branch"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Branch",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{server_base_url}}/api/branch/{{branch_name}}",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "branch",
-                "{{branch_name}}"
-              ]
-            },
-            "description": "Completely cleanup and delete a branch environment"
-          },
-          "response": []
+            }
+          ]
         }
       ]
     },
@@ -305,7 +317,7 @@
       "description": "API endpoints for individual branch applications (Node.js Express apps)",
       "item": [
         {
-          "name": "Branch Root",
+          "name": "Root",
           "request": {
             "method": "GET",
             "header": [],
@@ -323,7 +335,7 @@
           "response": []
         },
         {
-          "name": "Branch Health Check",
+          "name": "Health Check",
           "request": {
             "method": "GET",
             "header": [],

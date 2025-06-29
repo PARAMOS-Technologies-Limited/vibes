@@ -1,0 +1,58 @@
+{
+  "api_key": "{{ GEMINI_API_KEY }}",
+  "model": "gemini-1.5-flash",
+  "temperature": 0.7,
+  "max_tokens": 2048,
+  "top_p": 0.9,
+  "top_k": 40,
+  "project": {
+    "name": "hovel",
+    "description": "AI-powered development environment orchestration system",
+    "version": "1.0.0"
+  },
+  "settings": {
+    "auto_save": true,
+    "verbose": false,
+    "timeout": 30000,
+    "retry_attempts": 3
+  },
+  "templates": {
+    "branch_creation": {
+      "name": "branch_creation",
+      "description": "Template for creating new development branches",
+      "prompt": "Create a new development branch for the Hovel project with the following specifications: {branch_name}, {description}"
+    },
+    "code_review": {
+      "name": "code_review",
+      "description": "Template for code review assistance",
+      "prompt": "Review the following code for the Hovel project: {code}"
+    },
+    "api_documentation": {
+      "name": "api_documentation",
+      "description": "Template for generating API documentation",
+      "prompt": "Generate documentation for the following API endpoint: {endpoint}"
+    }
+  },
+  "integrations": {
+    "git": {
+      "enabled": true,
+      "auto_commit": false,
+      "commit_message_template": "feat: {description}"
+    },
+    "postman": {
+      "enabled": true,
+      "collection_path": "./Hovel_API_Collection.json"
+    }
+  },
+  "security": {
+    "encrypt_api_key": true,
+    "allowed_models": [
+      "gemini-1.5-flash",
+      "gemini-1.5-pro"
+    ],
+    "rate_limit": {
+      "requests_per_minute": 60,
+      "requests_per_hour": 1000
+    }
+  }
+}

@@ -1,2 +1,8 @@
 .docker
 **/*venv*
+
+# Gemini CLI configuration (contains API keys)
+.gemini/config.json
+
+# Keep the README for documentation
+!.gemini/config.template.md

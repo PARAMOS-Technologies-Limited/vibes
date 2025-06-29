@@ -128,6 +128,16 @@ Complete guide to the branch management system, including:
 - Git workflow integration
 - API usage examples
 
+### 🤖 [Gemini CLI Integration](docs/GEMINI_CLI.md)
+
+Complete guide to AI-powered development assistance, including:
+- Configuration setup and API key management
+- Project-specific templates for development
+- Integration with Git, Docker, and Postman
+- Code review and documentation generation
+- Security settings and rate limiting
+- Development workflow automation
+
 ### 🚀 [Postman Collection Setup](docs/POSTMAN_SETUP.md)
 
 Complete guide for testing the APIs using Postman, including:
@@ -148,7 +158,11 @@ hovel/
 ├── branches/                    # Branch environments (created dynamically)
 ├── docs/                        # Documentation
 │   ├── BRANCH_README.md        # Branch management documentation
+│   ├── GEMINI_CLI.md           # Gemini CLI integration guide
 │   └── POSTMAN_SETUP.md        # Postman collection setup guide
+├── .gemini/                     # Gemini CLI configuration
+│   ├── config.json             # Main configuration (gitignored)
+│   └── config.template.json    # Template configuration
 ├── server.py                    # Main API server with Docker integration
 ├── run_branch.py               # Branch runner script
 ├── test_branch_system.py       # System test script
