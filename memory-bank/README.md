@@ -60,6 +60,14 @@ This directory contains comprehensive documentation and lessons learned for AI a
 5. **Test individual modules**: Use pytest for core logic, integration tests for API
 6. **Register blueprints**: Update `hovel_server/api/__init__.py` for new endpoints
 
+### When Working with External Templates (NEW)
+1. **Setup templates**: Run `python setup_template_directory.py` to copy app directory to external location
+2. **Configure template path**: Set `APP_TEMPLATE_PATH` environment variable (default: `/opt/hovel-templates/app-template`)
+3. **Test functionality**: Run `python test_template_functionality.py` to verify template system works
+4. **Remove local app**: Use `python setup_template_directory.py --remove-local` after confirming functionality
+5. **Update templates**: Modify files in external template directory, no need to touch main repo
+6. **Multiple templates**: Support different app types by creating multiple template directories
+
 ## 🔍 Search Keywords
 
 Use these keywords to quickly find relevant information:
@@ -76,6 +84,7 @@ Use these keywords to quickly find relevant information:
 - **Branch persistence**: Filesystem-based tracking, .branch files, startup scanning
 - **Modular architecture**: Package structure, separation of concerns, blueprints, core modules
 - **Module development**: API layer, core layer, business logic, Flask blueprints
+- **External templates**: Template directories, APP_TEMPLATE_PATH, template management, app duplication
 
 ## 📖 How to Use This Knowledge Base
 
@@ -115,7 +124,58 @@ Use these keywords to quickly find relevant information:
 5. **Configuration Management**: Use `hovel_server/config.py` for app-wide settings
 6. **Middleware Extension**: Add request/response processing in `hovel_server/middleware.py`
 
+### For External Template Management (NEW)
+1. **Template Setup**: ✅ **COMPLETED** - External template system implemented
+2. **Template Configuration**: Use `APP_TEMPLATE_PATH` environment variable
+3. **Template Testing**: Comprehensive test suite for template functionality
+4. **Template Updates**: Modify external templates without touching main repo
+5. **Multiple Templates**: Support for different app types and frameworks
+
 ## 🎉 Recent Achievements
+
+### External Template System - COMPLETED ✅
+**Problem Solved:** The app directory was embedded in the main repository, making template management difficult and requiring repo changes for template updates.
+
+**Solution Implemented:**
+1. **External template directories**: Templates are now stored outside the main repo at `/opt/hovel-templates/app-template`
+2. **Environment variable configuration**: `APP_TEMPLATE_PATH` controls template location
+3. **Docker volume mounting**: Template directory is mounted into the container
+4. **Setup automation**: `setup_template_directory.py` script for easy template setup
+5. **Comprehensive testing**: `test_template_functionality.py` verifies template system works
+6. **Clean separation**: Templates are independent of the orchestrator repository
+
+**Code Changes:**
+```python
+# Before: Hardcoded app directory
+def duplicate_app_directory(branch_name, port, api_key=None):
+    source_dir = 'app'  # ❌ Embedded in repo
+
+# After: Configurable external template
+def duplicate_app_directory(branch_name, port, api_key=None):
+    template_dir = os.getenv('APP_TEMPLATE_PATH', '/opt/hovel-templates/app-template')  # ✅ External configurable
+```
+
+**Benefits:**
+- 🧹 **Clean separation**: Templates are independent of the orchestrator repo
+- 🔄 **Easy updates**: Update templates without touching the main repo
+- 📁 **Multiple templates**: Support different app types and frameworks
+- 🏷️ **Version control**: Templates can be in their own repositories
+- 👥 **Team collaboration**: Multiple developers can contribute to templates
+- 🧪 **Testable**: Comprehensive test suite for template functionality
+
+**Setup Process:**
+1. Run `python setup_template_directory.py` to copy app to external location
+2. Restart Docker container to pick up new template path
+3. Test with `python test_template_functionality.py`
+4. Optionally remove local app directory with `--remove-local` flag
+
+**Testing:**
+- ✅ Template directory creation and file copying
+- ✅ Environment variable configuration
+- ✅ Docker volume mounting
+- ✅ Branch creation using external templates
+- ✅ Template file validation and placeholder replacement
+- ✅ Cleanup and error handling
 
 ### Server Modularization - COMPLETED ✅
 **Problem Solved:** The server was a single large file (`server.py`) with 749 lines, making it difficult to maintain, test, and extend.

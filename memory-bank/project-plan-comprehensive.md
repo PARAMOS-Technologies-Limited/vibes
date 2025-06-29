@@ -8,6 +8,7 @@
 - **Branch Management System**: Isolated development environments for different features
 - **Docker Integration**: Full containerization with automatic environment isolation
 - **Git Integration**: Automatic branch creation and management
+- **External Template System**: Configurable template directories for app duplication
 - **Web Terminal Interface**: Embeddable terminal for web applications
 
 ### Technology Stack
@@ -46,6 +47,28 @@ hovel_server/
 - **Team Development**: Multiple developers can work on different modules
 - **Reduced Context**: Smaller files are easier to understand and navigate
 
+### External Template System (NEW)
+The system now supports external template directories for better separation of concerns:
+
+```
+/opt/hovel-templates/
+├── app-template/              # Default Node.js/Express template
+│   ├── app.js                # Express.js application
+│   ├── package.json          # Node.js dependencies
+│   ├── Dockerfile            # Container configuration
+│   └── docker-compose.branch.template.yaml # Docker Compose template
+├── python-flask-template/     # Python/Flask template (future)
+└── react-frontend-template/   # React frontend template (future)
+```
+
+**Benefits of External Templates:**
+- **Clean Separation**: Templates are independent of the orchestrator repository
+- **Easy Updates**: Update templates without touching the main repo
+- **Multiple Templates**: Support different app types and frameworks
+- **Version Control**: Templates can be in their own repositories
+- **Team Collaboration**: Multiple developers can contribute to templates
+- **Testable**: Comprehensive test suite for template functionality
+
 ## 📁 Directory Structure
 
 ```
@@ -69,7 +92,7 @@ hovel/
 │       ├── docker.py           # Docker container operations
 │       ├── git.py              # Git branch operations
 │       └── gemini.py           # Gemini API integration
-├── app/                        # Main application directory
+├── app/                        # Main application directory (can be removed after setup)
 │   ├── app.py                 # Flask application
 │   ├── requirements.txt       # Python dependencies
 │   └── docker-compose.template.yaml
@@ -80,6 +103,8 @@ hovel/
 │   ├── python-environment-troubleshooting.md
 │   ├── flask-server-startup-guide.md
 │   └── project-plan-comprehensive.md
+├── setup_template_directory.py # Template setup script
+├── test_template_functionality.py # Template functionality test script
 ├── run_branch.py              # Branch runner script
 ├── test_branch_system.py      # System test script
 ├── test_filesystem_tracking.py # Filesystem tracking test script
@@ -89,6 +114,16 @@ hovel/
 ├── Dockerfile                 # Docker configuration
 ├── requirements.txt           # Python dependencies
 └── README.md                  # Project documentation
+```
+
+**External Template Directory:**
+```
+/opt/hovel-templates/
+└── app-template/              # External template directory
+    ├── app.js                # Express.js application
+    ├── package.json          # Node.js dependencies
+    ├── Dockerfile            # Container configuration
+    └── docker-compose.branch.template.yaml # Docker Compose template
 ```
 
 ## 🔌 API Specifications
@@ -268,6 +303,7 @@ python test_filesystem_tracking.py
 - [x] Environment isolation
 - [x] **Port conflict resolution** ✅ **COMPLETED**
 - [x] **Server modularization** ✅ **COMPLETED**
+- [x] **External template system** ✅ **COMPLETED**
 
 ### Phase 2: Advanced Features
 - [ ] **Web Terminal Interface**
@@ -281,6 +317,13 @@ python test_filesystem_tracking.py
   - Environment variable management
   - Resource monitoring and limits
   - Automatic cleanup policies
+
+- [ ] **Multiple Template Types**
+  - Python/Flask template
+  - React frontend template
+  - Vue.js template
+  - Go microservice template
+  - Template selection API
 
 - [ ] **API Enhancements**
   - Authentication and authorization
@@ -351,6 +394,50 @@ DOCKER_REGISTRY=localhost:5000
 - `.gitignore` - Version control exclusions
 
 ## 🎯 Recent Achievements (NEW)
+
+### External Template System - COMPLETED ✅
+**Problem Solved:** The app directory was embedded in the main repository, making template management difficult and requiring repo changes for template updates.
+
+**Solution Implemented:**
+1. **External template directories**: Templates are now stored outside the main repo at `/opt/hovel-templates/app-template`
+2. **Environment variable configuration**: `APP_TEMPLATE_PATH` controls template location
+3. **Docker volume mounting**: Template directory is mounted into the container
+4. **Setup automation**: `setup_template_directory.py` script for easy template setup
+5. **Comprehensive testing**: `test_template_functionality.py` verifies template system works
+6. **Clean separation**: Templates are independent of the orchestrator repository
+
+**Code Changes:**
+```python
+# Before: Hardcoded app directory
+def duplicate_app_directory(branch_name, port, api_key=None):
+    source_dir = 'app'  # ❌ Embedded in repo
+
+# After: Configurable external template
+def duplicate_app_directory(branch_name, port, api_key=None):
+    template_dir = os.getenv('APP_TEMPLATE_PATH', '/opt/hovel-templates/app-template')  # ✅ External configurable
+```
+
+**Benefits:**
+- 🧹 **Clean separation**: Templates are independent of the orchestrator repo
+- 🔄 **Easy updates**: Update templates without touching the main repo
+- 📁 **Multiple templates**: Support different app types and frameworks
+- 🏷️ **Version control**: Templates can be in their own repositories
+- 👥 **Team collaboration**: Multiple developers can contribute to templates
+- 🧪 **Testable**: Comprehensive test suite for template functionality
+
+**Setup Process:**
+1. Run `python setup_template_directory.py` to copy app to external location
+2. Restart Docker container to pick up new template path
+3. Test with `python test_template_functionality.py`
+4. Optionally remove local app directory with `--remove-local` flag
+
+**Testing:**
+- ✅ Template directory creation and file copying
+- ✅ Environment variable configuration
+- ✅ Docker volume mounting
+- ✅ Branch creation using external templates
+- ✅ Template file validation and placeholder replacement
+- ✅ Cleanup and error handling
 
 ### Port Conflict Resolution - COMPLETED ✅
 **Problem Solved:** Multiple branches were being created with the same port (8000), causing conflicts when trying to run multiple branch environments simultaneously.

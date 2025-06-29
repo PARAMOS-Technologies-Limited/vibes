@@ -10,16 +10,22 @@ logger = logging.getLogger(__name__)
 def duplicate_app_directory(branch_name, port, api_key=None):
     """Duplicate the app directory for the new branch"""
     try:
-        source_dir = 'app'
+        # Get template directory from environment variable or use default
+        template_dir = os.getenv('APP_TEMPLATE_PATH', '/opt/hovel-templates/app-template')
         target_dir = f'branches/{branch_name}'
+        
+        # Validate template directory exists
+        if not os.path.exists(template_dir):
+            logger.error(f"Template directory not found: {template_dir}")
+            raise FileNotFoundError(f"Template directory not found: {template_dir}")
         
         # Remove existing directory if it exists
         if os.path.exists(target_dir):
             shutil.rmtree(target_dir)
         
-        # Copy the app directory
-        shutil.copytree(source_dir, target_dir)
-        logger.info(f"Duplicated app directory to {target_dir}")
+        # Copy the template directory
+        shutil.copytree(template_dir, target_dir)
+        logger.info(f"Duplicated app directory from {template_dir} to {target_dir}")
         
         # Create branch-specific environment file
         create_branch_env_file(branch_name, target_dir, port)
@@ -57,8 +63,11 @@ BRANCH_NAME={branch_name}
 def create_branch_docker_compose(branch_name, target_dir, port):
     """Create Docker Compose file for the branch using template"""
     try:
-        # Read the template file
-        template_path = os.path.join('app', 'docker-compose.branch.template.yaml')
+        # Get template directory path
+        template_dir = os.getenv('APP_TEMPLATE_PATH', '/opt/hovel-templates/app-template')
+        
+        # Read the template file from the template directory
+        template_path = os.path.join(template_dir, 'docker-compose.branch.template.yaml')
         if not os.path.exists(template_path):
             logger.warning(f"Template file not found: {template_path}")
             return

@@ -14,6 +14,7 @@ Hovel is a Flask-based API server that provides a complete development environme
 - **Git Integration**: Automatic git branch creation and management
 - **Environment Isolation**: Each branch runs on its own port with complete environment isolation
 - **Automatic Container Management**: Start, stop, and monitor Docker containers for each branch
+- **External Template System**: Use external template directories for app duplication (no need to keep app directory in repo)
 - **Web Terminal Interface**: Embeddable terminal for web applications
 
 ## Quick Start
@@ -118,35 +119,48 @@ curl -X POST http://localhost:8000/api/branch/feature-new-ui/stop
 curl -X POST http://localhost:8000/api/branch/feature-new-ui/start
 ```
 
-## Documentation
+## External Template System
 
-### 📚 [Branch Management System](docs/BRANCH_README.md)
+### Overview
 
-Complete guide to the branch management system, including:
-- Creating and managing development branches
-- Environment isolation and port management
-- Docker integration for branches
-- Git workflow integration
-- API usage examples
+Hovel now supports external template directories, allowing you to keep your app templates outside the main repository. This provides better separation of concerns and makes template management more flexible.
 
-### 🤖 [Gemini CLI Integration](docs/GEMINI_CLI.md)
+### Setup
 
-Complete guide to AI-powered development assistance, including:
-- Configuration setup and API key management
-- Project-specific templates for development
-- Integration with Git, Docker, and Postman
-- Code review and documentation generation
-- Security settings and rate limiting
-- Development workflow automation
+1. **Copy your current app directory to the external template location:**
+   ```bash
+   python setup_template_directory.py
+   ```
 
-### 🚀 [Postman Collection Setup](docs/POSTMAN_SETUP.md)
+2. **Restart your Docker container to pick up the new template path:**
+   ```bash
+   docker-compose down
+   docker-compose up
+   ```
 
-Complete guide for testing the APIs using Postman, including:
-- Import instructions for the Postman collection
-- Environment variable setup
-- API endpoint documentation
-- Usage examples and troubleshooting
-- Collection file: `Hovel_API_Collection.json`
+3. **Test the functionality:**
+   ```bash
+   python test_template_functionality.py
+   ```
+
+4. **Remove the local app directory (optional):**
+   ```bash
+   python setup_template_directory.py --remove-local
+   ```
+
+### Configuration
+
+The system uses the `APP_TEMPLATE_PATH` environment variable to locate templates:
+- **Default**: `/opt/hovel-templates/app-template`
+- **Custom**: Set `APP_TEMPLATE_PATH` to your preferred location
+
+### Benefits
+
+- ✅ **Clean separation**: Templates are independent of the orchestrator repo
+- ✅ **Easy updates**: Update templates without touching the main repo
+- ✅ **Multiple templates**: Support different app types and frameworks
+- ✅ **Version control**: Templates can be in their own repositories
+- ✅ **Team collaboration**: Multiple developers can contribute to templates
 
 ## Project Structure
 
@@ -168,7 +182,7 @@ hovel/
 │   ├── config.py              # App configuration
 │   ├── logging_config.py      # Logging setup
 │   └── middleware.py          # Request/response logging & error handlers
-├── app/                        # Main application directory
+├── app/                        # Main application directory (can be removed after setup)
 │   ├── app.py                 # Flask application
 │   ├── requirements.txt       # Python dependencies
 │   └── docker-compose.branch.template.yaml
@@ -184,6 +198,8 @@ hovel/
 │   ├── python-environment-troubleshooting.md
 │   ├── flask-server-startup-guide.md
 │   └── project-plan-comprehensive.md
+├── setup_template_directory.py # Template setup script
+├── test_template_functionality.py # Template functionality test script
 ├── run_branch.py              # Branch runner script
 ├── test_branch_system.py      # System test script
 ├── test_filesystem_tracking.py # Filesystem tracking test script
@@ -195,6 +211,16 @@ hovel/
 ├── requirements.txt           # Python dependencies
 ├── Hovel_API_Collection.json  # Postman collection for API testing
 └── README.md                  # This file
+```
+
+**External Template Directory:**
+```
+/opt/hovel-templates/
+└── app-template/              # External template directory
+    ├── app.js                # Express.js application
+    ├── package.json          # Node.js dependencies
+    ├── Dockerfile            # Container configuration
+    └── docker-compose.branch.template.yaml # Docker Compose template
 ```
 
 ## Modular Architecture
