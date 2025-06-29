@@ -1,0 +1,16 @@
+services:
+  app-{{BRANCH_NAME}}:
+    build: .
+    ports:
+      - "{{PORT}}:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT={{PORT}}
+    restart: unless-stopped
+    container_name: hovel-app-{{BRANCH_NAME}}
+    networks:
+      - hovel-shared
+
+networks:
+  hovel-shared:
+    external: true 
