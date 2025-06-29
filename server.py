@@ -10,6 +10,7 @@ import logging
 import shutil
 import subprocess
 import json
+import requests
 from datetime import datetime
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -42,17 +43,17 @@ def get_next_available_port():
     return port
 
 def create_git_branch(branch_name):
-    """Create a new git branch"""
+    """Create a new git branch in the app directory"""
     try:
-        # Check if we're in a git repository
-        result = subprocess.run(['git', 'status'], capture_output=True, text=True, cwd='.')
+        # Check if we're in a git repository in the app directory
+        result = subprocess.run(['git', 'status'], capture_output=True, text=True, cwd='app')
         if result.returncode != 0:
-            logger.warning("Not in a git repository or git not available - skipping git branch creation")
+            logger.warning("Not in a git repository in app directory or git not available - skipping git branch creation")
             return True
         
-        # Create and checkout new branch
-        subprocess.run(['git', 'checkout', '-b', branch_name], check=True, cwd='.')
-        logger.info(f"Created and checked out branch: {branch_name}")
+        # Create and checkout new branch in the app directory
+        subprocess.run(['git', 'checkout', '-b', branch_name], check=True, cwd='app')
+        logger.info(f"Created and checked out branch: {branch_name} in app directory")
         return True
     except subprocess.CalledProcessError as e:
         logger.error(f"Git command failed: {e}")
@@ -110,35 +111,26 @@ BRANCH_NAME={branch_name}
         logger.warning(f"Could not create environment file: {e}")
 
 def create_branch_docker_compose(branch_name, target_dir, port):
-    """Create Docker Compose file for the branch"""
+    """Create Docker Compose file for the branch using template"""
     try:
-        compose_content = f"""services:
-  app-{branch_name}:
-    build: .
-    ports:
-      - "{port}:8000"
-    env_file:
-      - .env
-    environment:
-      - FLASK_APP=app.py
-      - FLASK_ENV=development
-      - PORT={port}
-      - BRANCH_NAME={branch_name}
-    restart: unless-stopped
-    container_name: hovel-app-{branch_name}
-    networks:
-      - hovel-shared
-
-networks:
-  hovel-shared:
-    external: true
-"""
+        # Read the template file
+        template_path = os.path.join('app', 'docker-compose.branch.template.yaml')
+        if not os.path.exists(template_path):
+            logger.warning(f"Template file not found: {template_path}")
+            return
+        
+        with open(template_path, 'r') as f:
+            template_content = f.read()
+        
+        # Replace placeholders with actual values
+        compose_content = template_content.replace('{{BRANCH_NAME}}', branch_name)
+        compose_content = compose_content.replace('{{PORT}}', str(port))
         
         compose_file = os.path.join(target_dir, 'docker-compose.yaml')
         with open(compose_file, 'w') as f:
             f.write(compose_content)
         
-        logger.info(f"Created Docker Compose file: {compose_file}")
+        logger.info(f"Created Docker Compose file from template: {compose_file}")
     except Exception as e:
         logger.warning(f"Could not create Docker Compose file: {e}")
 
