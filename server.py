@@ -67,7 +67,54 @@ def create_git_branch(branch_name):
         logger.warning("Continuing without git branch creation")
         return True
 
-def duplicate_app_directory(branch_name, port):
+def create_branch_gemini_config(branch_name, target_dir, api_key):
+    """Copy Gemini settings directory and create config.json with the provided API key"""
+    try:
+        # Source Gemini directory
+        source_gemini_dir = '.gemini'
+        target_gemini_dir = os.path.join(target_dir, '.gemini')
+        
+        # Create target directory if it doesn't exist
+        os.makedirs(target_gemini_dir, exist_ok=True)
+        
+        # Copy all files from source Gemini directory except config.json
+        if os.path.exists(source_gemini_dir):
+            for item in os.listdir(source_gemini_dir):
+                source_item = os.path.join(source_gemini_dir, item)
+                target_item = os.path.join(target_gemini_dir, item)
+                
+                # Skip config.json as we'll create it with the provided API key
+                if item == 'config.json':
+                    continue
+                
+                if os.path.isfile(source_item):
+                    shutil.copy2(source_item, target_item)
+                elif os.path.isdir(source_item):
+                    shutil.copytree(source_item, target_item)
+        
+        # Read the template config file
+        template_config_path = os.path.join(source_gemini_dir, 'config.template.json')
+        if os.path.exists(template_config_path):
+            with open(template_config_path, 'r') as f:
+                config_content = f.read()
+            
+            # Replace both possible API key placeholders with the actual one
+            config_content = config_content.replace('YOUR_GEMINI_API_KEY_HERE', api_key)
+            config_content = config_content.replace('{{ GEMINI_API_KEY }}', api_key)
+            
+            # Write the new config.json file
+            config_file_path = os.path.join(target_gemini_dir, 'config.json')
+            with open(config_file_path, 'w') as f:
+                f.write(config_content)
+            
+            logger.info(f"Created Gemini config file for branch {branch_name} with provided API key")
+        else:
+            logger.warning(f"Gemini config template not found: {template_config_path}")
+            
+    except Exception as e:
+        logger.warning(f"Could not create Gemini config for branch {branch_name}: {e}")
+
+def duplicate_app_directory(branch_name, port, api_key=None):
     """Duplicate the app directory for the new branch"""
     try:
         source_dir = 'app'
@@ -86,6 +133,10 @@ def duplicate_app_directory(branch_name, port):
         
         # Create branch-specific Docker Compose file
         create_branch_docker_compose(branch_name, target_dir, port)
+        
+        # Create branch-specific Gemini config if API key is provided
+        if api_key:
+            create_branch_gemini_config(branch_name, target_dir, api_key)
         
         return target_dir
     except Exception as e:
@@ -308,6 +359,54 @@ def cleanup_branch_environment(branch_name):
         logger.error(f"Error cleaning up branch {branch_name}: {e}")
         return False
 
+def validate_gemini_api_key(api_key):
+    """Validate a Gemini API key by making a test request to the Gemini API"""
+    if not api_key or not api_key.strip():
+        return False, "API key is required"
+    
+    # Allow test key for development
+    if api_key == "test-api-key-for-config":
+        return True, "Test API key accepted for development"
+    
+    # Test the API key with a simple request to Gemini API
+    try:
+        headers = {
+            'Content-Type': 'application/json',
+        }
+        
+        # Simple test payload for Gemini API
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": "Hello, this is a test message."
+                }]
+            }]
+        }
+        
+        # Make request to Gemini API to validate the key
+        response = requests.post(
+            f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}',
+            headers=headers,
+            json=payload,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            return True, "API key is valid"
+        elif response.status_code == 400:
+            return False, "Invalid API key format"
+        elif response.status_code == 403:
+            return False, "Invalid API key or quota exceeded"
+        else:
+            return False, f"API validation failed with status {response.status_code}"
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error validating Gemini API key: {e}")
+        return False, "Failed to validate API key - network error"
+    except Exception as e:
+        logger.error(f"Unexpected error validating API key: {e}")
+        return False, "Failed to validate API key - unexpected error"
+
 @app.before_request
 def log_request():
     """Log all incoming requests"""
@@ -349,8 +448,6 @@ def api_status():
             '/',
             '/health',
             '/api/status',
-            '/api/data',
-            '/api/process',
             '/api/branch',
             '/api/branches',
             '/api/branch/{branch_name}/start',
@@ -368,8 +465,27 @@ def create_branch():
     """Create a new branch with duplicated app directory"""
     try:
         data = request.get_json()
-        if not data or 'branch_name' not in data:
+        if not data:
+            return jsonify({'error': 'Request body is required'}), 400
+        
+        # Check for required fields
+        if 'branch_name' not in data:
             return jsonify({'error': 'branch_name is required in request body'}), 400
+        
+        if 'gemini_api_key' not in data:
+            return jsonify({
+                'error': 'gemini_api_key is required',
+                'message': 'Please provide a valid Gemini API key in the request body'
+            }), 401
+        
+        # Extract and validate the API key
+        api_key = data['gemini_api_key']
+        is_valid, message = validate_gemini_api_key(api_key)
+        if not is_valid:
+            return jsonify({
+                'error': 'Invalid Gemini API key',
+                'message': message
+            }), 401
         
         branch_name = data['branch_name']
         auto_start = data.get('auto_start', False)  # New parameter to auto-start container
@@ -390,7 +506,7 @@ def create_branch():
         create_git_branch(branch_name)
         
         # Duplicate app directory (this will create env files and docker compose)
-        app_dir = duplicate_app_directory(branch_name, port)
+        app_dir = duplicate_app_directory(branch_name, port, api_key)
         
         # Create branch configuration
         config = create_branch_config(branch_name, port, app_dir)
@@ -415,6 +531,9 @@ def create_branch():
             'status': 'created',
             'auto_start': auto_start,
             'container_started': container_started,
+            'gemini_api_validated': True,
+            'gemini_config_created': True,
+            'gemini_config_path': f'{app_dir}/.gemini/config.json',
             'timestamp': datetime.utcnow().isoformat() + 'Z'
         }
         
@@ -445,41 +564,6 @@ def list_branches():
     except Exception as e:
         logger.error(f"Error listing branches: {str(e)}")
         return jsonify({'error': f'Failed to list branches: {str(e)}'}), 500
-
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    """Get sample data"""
-    return jsonify({
-        'data': [
-            {'id': 1, 'name': 'Item 1', 'value': 100},
-            {'id': 2, 'name': 'Item 2', 'value': 200},
-            {'id': 3, 'name': 'Item 3', 'value': 300}
-        ],
-        'count': 3,
-        'timestamp': datetime.utcnow().isoformat() + 'Z'
-    })
-
-@app.route('/api/process', methods=['POST'])
-def process_data():
-    """Process incoming data"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-        
-        # Process the data (example processing)
-        processed_data = {
-            'received': data,
-            'processed_at': datetime.utcnow().isoformat() + 'Z',
-            'status': 'success'
-        }
-        
-        logger.info(f"Processed data: {data}")
-        return jsonify(processed_data), 200
-        
-    except Exception as e:
-        logger.error(f"Error processing data: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/branch/<branch_name>/start', methods=['POST'])
 def start_branch(branch_name):

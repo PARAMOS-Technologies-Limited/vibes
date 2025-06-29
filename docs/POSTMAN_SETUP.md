@@ -28,6 +28,7 @@ The collection uses environment variables for flexible URL management:
 | `server_base_url` | `http://localhost:8000` | Base URL for the main server API |
 | `branch_base_url` | `http://localhost:8001` | Base URL for branch app APIs (port varies by branch) |
 | `branch_name` | `feature-branch` | Name of the branch to test |
+| `gemini_api_key` | | Gemini API key for branch creation |
 
 ## API Endpoints
 
@@ -36,12 +37,10 @@ The collection uses environment variables for flexible URL management:
 #### Basic Endpoints
 - **GET /** - Get server information and status
 - **GET /health** - Check if the server is healthy
-- **GET /api/status** - Get API status and list of available endpoints
-- **GET /api/data** - Get sample data from the server
-- **POST /api/process** - Process incoming data
+- **GET /api/status** - Get API status and available endpoints
 
 #### Branch Management Endpoints
-- **POST /api/branch** - Create a new branch
+- **POST /api/branch** - Create a new branch (requires Gemini API key)
 - **GET /api/branches** - List all created branches
 - **POST /api/branch/{branch_name}/start** - Start a branch container
 - **POST /api/branch/{branch_name}/stop** - Stop a branch container
@@ -64,11 +63,13 @@ The collection uses environment variables for flexible URL management:
 ```json
 {
   "branch_name": "my-feature-branch",
-  "auto_start": true
+  "auto_start": true,
+  "gemini_api_key": "{{gemini_api_key}}"
 }
 ```
-3. Send the request
-4. Note the returned port number for the new branch
+3. Make sure the `gemini_api_key` variable is set with your actual API key
+4. Send the request
+5. Note the returned port number for the new branch
 
 ### 2. Test Branch App API
 1. After creating a branch, update the `branch_base_url` variable with the correct port
@@ -91,19 +92,8 @@ Content-Type: application/json
 
 {
   "branch_name": "test-feature",
-  "auto_start": true
-}
-```
-
-### Process Data Request
-```json
-POST {{server_base_url}}/api/process
-Content-Type: application/json
-
-{
-  "name": "test data",
-  "value": 123,
-  "description": "Sample data for processing"
+  "auto_start": true,
+  "gemini_api_key": "{{gemini_api_key}}"
 }
 ```
 

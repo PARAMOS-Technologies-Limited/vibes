@@ -65,53 +65,6 @@
             "description": "Get API status and list of available endpoints"
           },
           "response": []
-        },
-        {
-          "name": "Get Sample Data",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{server_base_url}}/api/data",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "data"
-              ]
-            },
-            "description": "Get sample data from the server"
-          },
-          "response": []
-        },
-        {
-          "name": "Process Data",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"test data\",\n  \"value\": 123,\n  \"description\": \"Sample data for processing\"\n}"
-            },
-            "url": {
-              "raw": "{{server_base_url}}/api/process",
-              "host": [
-                "{{server_base_url}}"
-              ],
-              "path": [
-                "api",
-                "process"
-              ]
-            },
-            "description": "Process incoming data and return processed result"
-          },
-          "response": []
         }
       ]
     },
@@ -135,7 +88,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"branch_name\": \"feature-branch\",\n  \"auto_start\": true\n}"
+                  "raw": "{\n  \"branch_name\": \"feature-branch\",\n  \"auto_start\": true,\n  \"gemini_api_key\": \"{{gemini_api_key}}\"\n}"
                 },
                 "url": {
                   "raw": "{{server_base_url}}/api/branch",
@@ -147,7 +100,7 @@
                     "branch"
                   ]
                 },
-                "description": "Create a new branch with duplicated app directory and optional auto-start"
+                "description": "Create a new branch with duplicated app directory and optional auto-start. Requires valid Gemini API key in request body."
               },
               "response": []
             },
@@ -393,6 +346,12 @@
       "value": "feature-branch",
       "type": "string",
       "description": "Name of the branch to test (used in branch-specific endpoints)"
+    },
+    {
+      "key": "gemini_api_key",
+      "value": "YOUR_GEMINI_API_KEY_HERE",
+      "type": "string",
+      "description": "Gemini API key required for branch creation. Get from https://makersuite.google.com/app/apikey"
     }
   ]
 }

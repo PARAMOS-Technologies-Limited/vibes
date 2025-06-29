@@ -21,7 +21,9 @@ This system allows you to create isolated branches of your Flask application, ea
 **Request Body:**
 ```json
 {
-    "branch_name": "feature-new-ui"
+    "branch_name": "feature-new-ui",
+    "auto_start": true,
+    "gemini_api_key": "YOUR_GEMINI_API_KEY"
 }
 ```
 
@@ -34,6 +36,9 @@ This system allows you to create isolated branches of your Flask application, ea
     "app_directory": "branches/feature-new-ui",
     "git_branch": "feature-new-ui",
     "status": "created",
+    "auto_start": true,
+    "container_started": true,
+    "gemini_api_validated": true,
     "timestamp": "2024-01-01T12:00:00Z"
 }
 ```
@@ -74,15 +79,21 @@ The main server runs on port 8000.
 ```bash
 curl -X POST http://localhost:8000/api/branch \
   -H "Content-Type: application/json" \
-  -d '{"branch_name": "feature-new-ui"}'
+  -d '{
+    "branch_name": "feature-new-ui",
+    "auto_start": true,
+    "gemini_api_key": "YOUR_GEMINI_API_KEY"
+  }'
 ```
 
 This will:
+- Validate the provided Gemini API key
 - Create a new git branch called `feature-new-ui`
 - Duplicate the entire `app/` directory to `branches/feature-new-ui/`
 - Create a branch-specific `.env` file with environment variables
 - Create a branch-specific `docker-compose.yaml` file
 - Assign a unique port (starting from 8001)
+- Optionally start the Docker container if `auto_start` is true
 
 ### 3. Run the Branch App
 

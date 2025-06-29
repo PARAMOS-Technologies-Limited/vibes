@@ -218,4 +218,29 @@ cat branches/test-branch/.env
 - `requirements.txt` - Python package dependencies
 - `server.py` - Flask application with port conflict resolution
 - `branches/*/.env` - Branch-specific environment files with unique ports
-- `branches/*/docker-compose.yaml` - Branch-specific Docker Compose files 
+- `branches/*/docker-compose.yaml` - Branch-specific Docker Compose files
+
+## Lessons Learned - Gemini CLI Integration and API Key Management
+
+### 1. Branch Creation with Gemini CLI Support
+- When a new branch is created via the API, the `.gemini` settings directory is copied into the new branch's directory.
+- The `config.template.json` file is used to generate a branch-specific `.gemini/config.json` file.
+- The API key provided in the branch creation request is injected into the config file, replacing both `YOUR_GEMINI_API_KEY_HERE` and `{{ GEMINI_API_KEY }}` placeholders.
+- This ensures each branch is ready for Gemini CLI usage with the correct API key.
+
+### 2. API Key Validation
+- The server validates the Gemini API key before proceeding with branch creation.
+- For development/testing, a special test key can be allowed to bypass real API validation.
+
+### 3. Postman and Documentation Sync
+- The Postman collection is kept in sync with the server endpoints and required request formats.
+- All documentation and usage examples are updated to reflect the current API, including the requirement for the Gemini API key in the request body.
+
+### 4. Error Handling and Security
+- If the API key is missing or invalid, branch creation is rejected with a clear error message.
+- The `.gemini/config.json` file is gitignored to prevent accidental exposure of API keys.
+
+### 5. Best Practices
+- Always use a template config and inject secrets at runtime or branch creation.
+- Keep API documentation, Postman collections, and server logic in sync to avoid confusion for users and developers.
+- Automate as much of the environment setup as possible for new branches to ensure consistency and developer productivity. 

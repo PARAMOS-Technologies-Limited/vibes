@@ -52,10 +52,6 @@ hovel/
 - `GET /health` - Health check endpoint
 - `GET /api/status` - API status and available endpoints
 
-#### Data Operations
-- `GET /api/data` - Sample data endpoint
-- `POST /api/process` - Data processing endpoint
-
 #### Branch Management
 - `POST /api/branch` - Create a new development branch
   ```json

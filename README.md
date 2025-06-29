@@ -54,8 +54,6 @@ python server.py
 - `GET /` - Server information and status
 - `GET /health` - Health check endpoint
 - `GET /api/status` - API status and available endpoints
-- `GET /api/data` - Sample data endpoint
-- `POST /api/process` - Data processing endpoint
 
 ### Branch Management Endpoints
 
@@ -63,9 +61,11 @@ python server.py
   ```json
   {
     "branch_name": "feature-new-ui",
-    "auto_start": true
+    "auto_start": true,
+    "gemini_api_key": "YOUR_GEMINI_API_KEY"
   }
   ```
+  **Note:** A valid Gemini API key is required for branch creation. Get your key from [Google AI Studio](https://makersuite.google.com/app/apikey).
 - `GET /api/branches` - List all created branches
 - `POST /api/branch/{branch_name}/start` - Start Docker container for a branch
 - `POST /api/branch/{branch_name}/stop` - Stop Docker container for a branch
@@ -101,7 +101,8 @@ curl -X POST http://localhost:8000/api/branch \
   -H "Content-Type: application/json" \
   -d '{
     "branch_name": "feature-new-ui",
-    "auto_start": true
+    "auto_start": true,
+    "gemini_api_key": "YOUR_GEMINI_API_KEY"
   }'
 
 # Check branch status
@@ -186,7 +187,8 @@ curl -X POST http://localhost:8000/api/branch \
   -H "Content-Type: application/json" \
   -d '{
     "branch_name": "feature-new-ui",
-    "auto_start": true
+    "auto_start": true,
+    "gemini_api_key": "YOUR_GEMINI_API_KEY"
   }'
 
 # The branch will be created and its Docker container will start automatically
