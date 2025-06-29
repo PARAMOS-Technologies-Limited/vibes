@@ -4,6 +4,7 @@
 
 ### Core Components
 - **Main API Server**: Flask-based REST API with comprehensive endpoints
+- **Modular Package Structure**: Well-organized `hovel_server/` package with separation of concerns
 - **Branch Management System**: Isolated development environments for different features
 - **Docker Integration**: Full containerization with automatic environment isolation
 - **Git Integration**: Automatic branch creation and management
@@ -17,30 +18,77 @@
 - **Version Control**: Git integration
 - **Development**: Cursor.dev IDE integration
 
+### Modular Architecture (NEW)
+The server has been refactored into a modular package structure for improved maintainability:
+
+```
+hovel_server/
+├── api/                    # Flask route handlers (blueprints)
+│   ├── status.py          # Health, status, root endpoints
+│   └── branch.py          # Branch management endpoints
+├── core/                   # Business logic (no Flask dependencies)
+│   ├── utils.py           # Filesystem tracking, port management
+│   ├── branch.py          # Branch creation and management
+│   ├── docker.py          # Docker container operations
+│   ├── git.py             # Git branch operations
+│   └── gemini.py          # Gemini API integration
+├── app_factory.py         # Flask app factory
+├── config.py              # App configuration
+├── logging_config.py      # Logging setup
+└── middleware.py          # Request/response logging & error handlers
+```
+
+**Benefits of Modular Architecture:**
+- **Separation of Concerns**: API layer handles HTTP, core layer handles business logic
+- **Testability**: Core logic can be tested without Flask dependencies
+- **Maintainability**: Each module has a single responsibility
+- **Scalability**: Easy to add new features and endpoints
+- **Team Development**: Multiple developers can work on different modules
+- **Reduced Context**: Smaller files are easier to understand and navigate
+
 ## 📁 Directory Structure
 
 ```
 hovel/
-├── app/                          # Main application directory
-│   ├── app.py                   # Flask application
-│   ├── requirements.txt         # Python dependencies
+├── server.py                    # Entry point (simplified, 40 lines)
+├── server_old.py               # Original monolithic server (backup)
+├── hovel_server/               # New modular package
+│   ├── __init__.py
+│   ├── app_factory.py          # Flask app factory
+│   ├── config.py               # App configuration
+│   ├── logging_config.py       # Logging setup
+│   ├── middleware.py           # Request/response logging & error handlers
+│   ├── api/                    # Flask route handlers
+│   │   ├── __init__.py
+│   │   ├── status.py           # Health, status, root endpoints
+│   │   └── branch.py           # Branch management endpoints
+│   └── core/                   # Business logic (no Flask dependencies)
+│       ├── __init__.py
+│       ├── utils.py            # Filesystem tracking, port management
+│       ├── branch.py           # Branch creation and management
+│       ├── docker.py           # Docker container operations
+│       ├── git.py              # Git branch operations
+│       └── gemini.py           # Gemini API integration
+├── app/                        # Main application directory
+│   ├── app.py                 # Flask application
+│   ├── requirements.txt       # Python dependencies
 │   └── docker-compose.template.yaml
-├── branches/                    # Branch environments (created dynamically)
-├── docs/                        # Documentation
-│   └── BRANCH_README.md        # Branch management documentation
-├── memory-bank/                 # AI Agent Knowledge Base
+├── branches/                   # Branch environments (created dynamically)
+├── docs/                       # Documentation
+│   └── BRANCH_README.md       # Branch management documentation
+├── memory-bank/                # AI Agent Knowledge Base
 │   ├── python-environment-troubleshooting.md
 │   ├── flask-server-startup-guide.md
 │   └── project-plan-comprehensive.md
-├── server.py                    # Main API server
-├── run_branch.py               # Branch runner script
-├── test_branch_system.py       # System test script
-├── create_branch_compose.py    # Docker Compose generator
-├── docker-compose.yaml         # Main Docker Compose
+├── run_branch.py              # Branch runner script
+├── test_branch_system.py      # System test script
+├── test_filesystem_tracking.py # Filesystem tracking test script
+├── create_branch_compose.py   # Docker Compose generator
+├── docker-compose.yaml        # Main Docker Compose
 ├── docker-compose.branch.template.yaml
-├── Dockerfile                  # Docker configuration
-├── requirements.txt            # Python dependencies
-└── README.md                   # Project documentation
+├── Dockerfile                 # Docker configuration
+├── requirements.txt           # Python dependencies
+└── README.md                  # Project documentation
 ```
 
 ## 🔌 API Specifications
@@ -171,6 +219,45 @@ python test_branch_system.py
 - **Documentation**: Auto-generated API docs
 - **Type Checking**: mypy for type safety
 
+### 5. Modular Development Workflow (NEW)
+With the new modular architecture, development follows these patterns:
+
+#### Adding New API Endpoints
+```bash
+# 1. Create new blueprint in hovel_server/api/
+# Example: hovel_server/api/new_feature.py
+
+# 2. Register blueprint in hovel_server/api/__init__.py
+from .new_feature import new_feature_bp
+app.register_blueprint(new_feature_bp)
+```
+
+#### Adding New Business Logic
+```bash
+# 1. Create new module in hovel_server/core/
+# Example: hovel_server/core/new_service.py
+
+# 2. Import in API layer
+from ..core import new_service
+```
+
+#### Testing Individual Modules
+```bash
+# Test core logic without Flask
+python -m pytest hovel_server/core/
+
+# Test API endpoints
+python -m pytest hovel_server/api/
+
+# Test full integration
+python test_filesystem_tracking.py
+```
+
+#### Module Responsibilities
+- **API Layer** (`hovel_server/api/`): Only HTTP request/response handling
+- **Core Layer** (`hovel_server/core/`): Pure business logic, no Flask dependencies
+- **Infrastructure**: Configuration, logging, middleware, app factory
+
 ## 🚀 Future Enhancements
 
 ### Phase 1: Core Features (Current)
@@ -180,6 +267,7 @@ python test_branch_system.py
 - [x] Git workflow integration
 - [x] Environment isolation
 - [x] **Port conflict resolution** ✅ **COMPLETED**
+- [x] **Server modularization** ✅ **COMPLETED**
 
 ### Phase 2: Advanced Features
 - [ ] **Web Terminal Interface**

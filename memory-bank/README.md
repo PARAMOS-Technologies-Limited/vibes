@@ -52,6 +52,14 @@ This directory contains comprehensive documentation and lessons learned for AI a
 4. **Use filesystem scanning** to discover existing branches on server startup
 5. **Test branch cleanup** ensures .branch files are properly removed
 
+### When Working with Modular Architecture (NEW)
+1. **Add new API endpoints**: Create new blueprints in `hovel_server/api/`
+2. **Add business logic**: Create new modules in `hovel_server/core/`
+3. **Update configuration**: Modify `hovel_server/config.py`
+4. **Add middleware**: Extend `hovel_server/middleware.py`
+5. **Test individual modules**: Use pytest for core logic, integration tests for API
+6. **Register blueprints**: Update `hovel_server/api/__init__.py` for new endpoints
+
 ## 🔍 Search Keywords
 
 Use these keywords to quickly find relevant information:
@@ -66,6 +74,8 @@ Use these keywords to quickly find relevant information:
 - **Container management**: Docker containers, auto-start, monitoring, logs
 - **Filesystem tracking**: .branch files, persistence, server restart, branch metadata
 - **Branch persistence**: Filesystem-based tracking, .branch files, startup scanning
+- **Modular architecture**: Package structure, separation of concerns, blueprints, core modules
+- **Module development**: API layer, core layer, business logic, Flask blueprints
 
 ## 📖 How to Use This Knowledge Base
 
@@ -97,7 +107,59 @@ Use these keywords to quickly find relevant information:
 3. **Container Monitoring**: ✅ **COMPLETED** - Status and logs available via API
 4. **Container Lifecycle**: ✅ **COMPLETED** - Start, stop, restart operations available
 
+### For Modular Development (NEW)
+1. **API Layer Development**: Create blueprints in `hovel_server/api/` for new endpoints
+2. **Core Logic Development**: Add business logic in `hovel_server/core/` (no Flask dependencies)
+3. **Testing Strategy**: Test core logic independently, then integration tests for API
+4. **Blueprint Registration**: Always register new blueprints in `hovel_server/api/__init__.py`
+5. **Configuration Management**: Use `hovel_server/config.py` for app-wide settings
+6. **Middleware Extension**: Add request/response processing in `hovel_server/middleware.py`
+
 ## 🎉 Recent Achievements
+
+### Server Modularization - COMPLETED ✅
+**Problem Solved:** The server was a single large file (`server.py`) with 749 lines, making it difficult to maintain, test, and extend.
+
+**Solution Implemented:**
+1. **Created modular package structure**: Split into `hovel_server/` package with clear separation of concerns
+2. **API Layer**: Moved all Flask routes to blueprints in `hovel_server/api/`
+3. **Core Layer**: Extracted business logic to `hovel_server/core/` (no Flask dependencies)
+4. **Infrastructure**: Separated config, logging, middleware, and app factory
+5. **Simplified entry point**: New `server.py` is only 40 lines and focuses on startup
+
+**New Structure:**
+```
+hovel_server/
+├── api/                    # Flask route handlers
+│   ├── status.py          # Health, status, root endpoints
+│   └── branch.py          # Branch management endpoints
+├── core/                   # Business logic (no Flask)
+│   ├── utils.py           # Filesystem tracking, port management
+│   ├── branch.py          # Branch creation and management
+│   ├── docker.py          # Docker container operations
+│   ├── git.py             # Git branch operations
+│   └── gemini.py          # Gemini API integration
+├── app_factory.py         # Flask app factory
+├── config.py              # App configuration
+├── logging_config.py      # Logging setup
+└── middleware.py          # Request/response logging & error handlers
+```
+
+**Benefits:**
+- 🧩 **Modular**: Each module has a single responsibility
+- 🧪 **Testable**: Core logic can be tested without Flask
+- 🔧 **Maintainable**: Easier to locate and fix issues
+- 📈 **Scalable**: Easy to add new features and endpoints
+- 🧠 **Reduced context**: Smaller files are easier to understand
+- 👥 **Team-friendly**: Multiple developers can work on different modules
+
+**Testing:**
+- ✅ All existing functionality preserved
+- ✅ API endpoints work identically
+- ✅ Filesystem-based tracking functional
+- ✅ Docker integration working
+- ✅ Git operations operational
+- ✅ Gemini API integration intact
 
 ### Filesystem-Based Branch Tracking - COMPLETED ✅
 **Problem Solved:** Branch tracking was using in-memory variables (`BRANCH_PORTS`), which meant branch information was lost when the server restarted.

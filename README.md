@@ -152,30 +152,67 @@ Complete guide for testing the APIs using Postman, including:
 
 ```
 hovel/
-├── app/                          # Main application directory
-│   ├── app.js                   # Node.js Express application
-│   ├── package.json             # Node.js dependencies
+├── server.py                    # Entry point (simplified, modular)
+├── server_old.py               # Original monolithic server (backup)
+├── hovel_server/               # New modular package
+│   ├── api/                    # Flask route handlers (blueprints)
+│   │   ├── status.py          # Health, status, root endpoints
+│   │   └── branch.py          # Branch management endpoints
+│   ├── core/                   # Business logic (no Flask dependencies)
+│   │   ├── utils.py           # Filesystem tracking, port management
+│   │   ├── branch.py          # Branch creation and management
+│   │   ├── docker.py          # Docker container operations
+│   │   ├── git.py             # Git branch operations
+│   │   └── gemini.py          # Gemini API integration
+│   ├── app_factory.py         # Flask app factory
+│   ├── config.py              # App configuration
+│   ├── logging_config.py      # Logging setup
+│   └── middleware.py          # Request/response logging & error handlers
+├── app/                        # Main application directory
+│   ├── app.py                 # Flask application
+│   ├── requirements.txt       # Python dependencies
 │   └── docker-compose.branch.template.yaml
-├── branches/                    # Branch environments (created dynamically)
-├── docs/                        # Documentation
-│   ├── BRANCH_README.md        # Branch management documentation
-│   ├── GEMINI_CLI.md           # Gemini CLI integration guide
-│   └── POSTMAN_SETUP.md        # Postman collection setup guide
-├── .gemini/                     # Gemini CLI configuration
-│   ├── config.json             # Main configuration (gitignored)
-│   └── config.template.json    # Template configuration
-├── server.py                    # Main API server with Docker integration
-├── run_branch.py               # Branch runner script
-├── test_branch_system.py       # System test script
+├── branches/                   # Branch environments (created dynamically)
+├── docs/                       # Documentation
+│   ├── BRANCH_README.md       # Branch management documentation
+│   ├── GEMINI_CLI.md          # Gemini CLI integration guide
+│   └── POSTMAN_SETUP.md       # Postman collection setup guide
+├── .gemini/                    # Gemini CLI configuration
+│   ├── config.json            # Main configuration (gitignored)
+│   └── config.template.json   # Template configuration
+├── memory-bank/                # AI Agent Knowledge Base
+│   ├── python-environment-troubleshooting.md
+│   ├── flask-server-startup-guide.md
+│   └── project-plan-comprehensive.md
+├── run_branch.py              # Branch runner script
+├── test_branch_system.py      # System test script
+├── test_filesystem_tracking.py # Filesystem tracking test script
 ├── test_docker_functionality.py # Docker functionality test script
-├── create_branch_compose.py    # Docker Compose generator
-├── docker-compose.yaml         # Main Docker Compose with DinD support
+├── create_branch_compose.py   # Docker Compose generator
+├── docker-compose.yaml        # Main Docker Compose with DinD support
 ├── docker-compose.branch.template.yaml
-├── Dockerfile                  # Docker configuration with Docker installation
-├── requirements.txt            # Python dependencies
-├── Hovel_API_Collection.json   # Postman collection for API testing
-└── README.md                   # This file
+├── Dockerfile                 # Docker configuration with Docker installation
+├── requirements.txt           # Python dependencies
+├── Hovel_API_Collection.json  # Postman collection for API testing
+└── README.md                  # This file
 ```
+
+## Modular Architecture
+
+The server has been refactored into a well-organized, modular package structure for improved maintainability and scalability:
+
+### Key Benefits
+- **🧩 Modular Design**: Each module has a single responsibility
+- **🧪 Testability**: Core logic can be tested without Flask dependencies
+- **🔧 Maintainability**: Easier to locate and fix issues
+- **📈 Scalability**: Easy to add new features and endpoints
+- **👥 Team Development**: Multiple developers can work on different modules
+- **🧠 Reduced Context**: Smaller files are easier to understand
+
+### Module Responsibilities
+- **API Layer** (`hovel_server/api/`): Only handles HTTP requests/responses
+- **Core Layer** (`hovel_server/core/`): Pure business logic, no Flask dependencies
+- **Infrastructure**: Configuration, logging, middleware, app factory
 
 ## Development
 
