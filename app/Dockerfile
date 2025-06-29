@@ -24,6 +24,7 @@ RUN npm install -g @google/gemini-cli
 
 # Copy application code
 COPY . .
+COPY .gemini .gemini
 
 # Expose port
 EXPOSE 8000

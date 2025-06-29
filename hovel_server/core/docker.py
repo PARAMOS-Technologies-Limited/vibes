@@ -5,6 +5,31 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def build_branch_image(branch_name):
+    """Build Docker image for a branch"""
+    try:
+        branch_dir = f'branches/{branch_name}'
+        compose_file = os.path.join(branch_dir, 'docker-compose.yaml')
+        
+        if not os.path.exists(compose_file):
+            raise FileNotFoundError(f"Docker Compose file not found for branch {branch_name}")
+        
+        # Build the image using docker-compose
+        result = subprocess.run([
+            'docker-compose', '-f', 'docker-compose.yaml', 'build'
+        ], capture_output=True, text=True, cwd=branch_dir, check=True)
+        
+        logger.info(f"Built Docker image for branch {branch_name}")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to build Docker image for branch {branch_name}: {e}")
+        logger.error(f"stdout: {e.stdout}")
+        logger.error(f"stderr: {e.stderr}")
+        return False
+    except Exception as e:
+        logger.error(f"Error building Docker image for branch {branch_name}: {e}")
+        return False
+
 def start_branch_container(branch_name):
     """Start Docker container for a branch"""
     try:

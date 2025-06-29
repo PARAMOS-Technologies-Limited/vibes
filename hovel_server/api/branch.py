@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 import logging
 from datetime import datetime
-from ..core import utils, git, gemini, docker, branch
+from ..core import utils, git, gemini, docker, branch, background_tasks
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def create_branch():
             }), 401
         
         branch_name = data['branch_name']
-        auto_start = data.get('auto_start', False)  # New parameter to auto-start container
+        auto_start = data.get('auto_start', True)  # Default to True for immediate build
         
         # Validate branch name
         if not branch_name or not branch_name.strip():
@@ -71,20 +71,13 @@ def create_branch():
         }
         utils.save_branch_info(branch_name, branch_info)
         
-        # Auto-start container if requested
-        container_started = False
+        # Start background build task if auto_start is enabled
+        task_id = None
         if auto_start:
-            container_started = docker.start_branch_container(branch_name)
-            if container_started:
-                logger.info(f"Auto-started Docker container for branch {branch_name}")
-                # Update branch info with container status
-                branch_info['container_started'] = True
-                branch_info['status'] = 'running'
-                utils.save_branch_info(branch_name, branch_info)
-            else:
-                logger.warning(f"Failed to auto-start Docker container for branch {branch_name}")
-                branch_info['container_started'] = False
-                utils.save_branch_info(branch_name, branch_info)
+            task_id = background_tasks.start_branch_build_task(branch_name)
+            branch_info['build_task_id'] = task_id
+            branch_info['status'] = 'building'
+            utils.save_branch_info(branch_name, branch_info)
         
         logger.info(f"Created branch {branch_name} on port {port}")
         
@@ -96,14 +89,16 @@ def create_branch():
             'git_branch': branch_name,
             'status': 'created',
             'auto_start': auto_start,
-            'container_started': container_started,
+            'build_task_id': task_id,
             'gemini_api_validated': True,
             'gemini_config_created': True,
             'gemini_config_path': f'{app_dir}/.gemini/config.json',
             'timestamp': datetime.utcnow().isoformat() + 'Z'
         }
         
-        return jsonify(response_data), 201
+        # Return 202 Accepted if auto_start is enabled, otherwise 201 Created
+        status_code = 202 if auto_start else 201
+        return jsonify(response_data), status_code
         
     except Exception as e:
         logger.error(f"Error creating branch: {str(e)}")
@@ -297,4 +292,48 @@ def delete_branch(branch_name):
             
     except Exception as e:
         logger.error(f"Error deleting branch {branch_name}: {str(e)}")
-        return jsonify({'error': f'Failed to delete branch: {str(e)}'}), 500 
+        return jsonify({'error': f'Failed to delete branch: {str(e)}'}), 500
+
+@branch_bp.route('/api/branch/<branch_name>/build-status', methods=['GET'])
+def get_branch_build_status(branch_name):
+    """Get the build status for a branch"""
+    try:
+        if not utils.branch_exists(branch_name):
+            return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        # Get build status from background tasks
+        build_status = background_tasks.get_branch_build_status(branch_name)
+        
+        if build_status is None:
+            return jsonify({'error': f'No build status found for branch {branch_name}'}), 404
+        
+        # If it's a BackgroundTask object, convert to dict
+        if hasattr(build_status, 'task_id'):
+            response_data = {
+                'branch_name': branch_name,
+                'task_id': getattr(build_status, 'task_id', None),
+                'status': getattr(build_status, 'status', 'unknown'),
+                'progress': getattr(build_status, 'progress', 0),
+                'message': getattr(build_status, 'message', ''),
+                'created_at': getattr(build_status, 'created_at', None),
+                'started_at': getattr(build_status, 'started_at', None),
+                'completed_at': getattr(build_status, 'completed_at', None),
+                'error': getattr(build_status, 'error', None),
+                'result': getattr(build_status, 'result', None),
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }
+        else:
+            # It's a dict from branch_info
+            response_data = {
+                'branch_name': branch_name,
+                'status': build_status.get('status', 'unknown'),
+                'message': build_status.get('message', 'No build task found'),
+                'branch_info': build_status.get('branch_info'),
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        logger.error(f"Error getting build status for branch {branch_name}: {str(e)}")
+        return jsonify({'error': f'Failed to get build status: {str(e)}'}), 500 
