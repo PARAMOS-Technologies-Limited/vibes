@@ -66,8 +66,8 @@ def create_branch():
             'status': 'created',
             'git_branch': branch_name,
             'gemini_api_validated': True,
-            'gemini_config_created': True,
-            'gemini_config_path': f'{app_dir}/.gemini/config.json'
+            'gemini_settings_created': True,
+            'gemini_settings_path': f'{app_dir}/.gemini/settings.json'
         }
         utils.save_branch_info(branch_name, branch_info)
         
@@ -91,8 +91,8 @@ def create_branch():
             'auto_start': auto_start,
             'build_task_id': task_id,
             'gemini_api_validated': True,
-            'gemini_config_created': True,
-            'gemini_config_path': f'{app_dir}/.gemini/config.json',
+            'gemini_settings_created': True,
+            'gemini_settings_path': f'{app_dir}/.gemini/settings.json',
             'timestamp': datetime.utcnow().isoformat() + 'Z'
         }
         
@@ -336,4 +336,63 @@ def get_branch_build_status(branch_name):
         
     except Exception as e:
         logger.error(f"Error getting build status for branch {branch_name}: {str(e)}")
-        return jsonify({'error': f'Failed to get build status: {str(e)}'}), 500 
+        return jsonify({'error': f'Failed to get build status: {str(e)}'}), 500
+
+@branch_bp.route('/api/branch/<branch_name>/gemini-session', methods=['POST'])
+def start_gemini_session(branch_name):
+    """Start a ttyd session with gemini-cli in a branch container"""
+    try:
+        if not utils.branch_exists(branch_name):
+            return jsonify({'error': f'Branch {branch_name} not found'}), 404
+        
+        # Get branch info to check if container is running
+        branch_info = utils.get_branch_info(branch_name)
+        if not branch_info:
+            return jsonify({'error': f'Branch {branch_name} info not found'}), 404
+        
+        # Check if container is running
+        container_status = docker.get_branch_container_status(branch_name)
+        if container_status.get('status') != 'running':
+            return jsonify({
+                'error': f'Branch {branch_name} container is not running',
+                'container_status': container_status.get('status'),
+                'message': 'Please start the branch container first using /api/branch/{branch_name}/start'
+            }), 400
+        
+        # Get the port for this branch to calculate ttyd port
+        branch_port = branch_info.get('port', 8000)
+        # Use a port offset for ttyd (branch_port + 1000)
+        ttyd_port = branch_port + 1000
+        
+        # Start ttyd session
+        result = docker.start_ttyd_session(branch_name, ttyd_port)
+        
+        if result['success']:
+            # Update branch info with ttyd session details
+            branch_info['ttyd_session'] = {
+                'port': ttyd_port,
+                'url': result['url'],
+                'started_at': datetime.utcnow().isoformat() + 'Z',
+                'command': 'ttyd -o -W gemini'
+            }
+            utils.save_branch_info(branch_name, branch_info)
+            
+            return jsonify({
+                'message': f'Gemini session started successfully for branch {branch_name}',
+                'branch_name': branch_name,
+                'ttyd_port': ttyd_port,
+                'ttyd_url': result['url'],
+                'gemini_command': 'ttyd -o -W gemini',
+                'access_url': f"http://localhost:{ttyd_port}",
+                'instructions': 'Open the access_url in your browser to access the Gemini CLI terminal',
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }), 200
+        else:
+            return jsonify({
+                'error': f'Failed to start Gemini session for branch {branch_name}',
+                'details': result.get('error', 'Unknown error')
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error starting Gemini session for branch {branch_name}: {str(e)}")
+        return jsonify({'error': f'Failed to start Gemini session: {str(e)}'}), 500 

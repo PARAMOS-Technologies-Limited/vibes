@@ -97,16 +97,87 @@ def get_branch_container_status(branch_name):
             'docker-compose', '-f', 'docker-compose.yaml', 'ps'
         ], capture_output=True, text=True, cwd=branch_dir, check=True)
         
+        # Parse the docker-compose ps output
         if 'Up' in result.stdout:
-            return {'status': 'running', 'details': result.stdout.strip()}
+            # Parse container details from the output
+            container_info = parse_container_details(result.stdout.strip())
+            return {
+                'status': 'running', 
+                'details': container_info
+            }
         elif 'Exit' in result.stdout:
-            return {'status': 'stopped', 'details': result.stdout.strip()}
+            container_info = parse_container_details(result.stdout.strip())
+            return {
+                'status': 'stopped', 
+                'details': container_info
+            }
         else:
-            return {'status': 'unknown', 'details': result.stdout.strip()}
+            return {
+                'status': 'unknown', 
+                'details': result.stdout.strip()
+            }
     except subprocess.CalledProcessError as e:
         return {'status': 'error', 'message': f'Failed to check status: {e.stderr}'}
     except Exception as e:
         return {'status': 'error', 'message': str(e)}
+
+def parse_container_details(ps_output):
+    """Parse docker-compose ps output into structured JSON"""
+    try:
+        lines = ps_output.strip().split('\n')
+        if len(lines) < 2:  # Need header + at least one container
+            return {'raw_output': ps_output}
+        
+        # Parse header to get column positions
+        header = lines[0]
+        containers = []
+        
+        # Find column positions based on header
+        name_pos = header.find('NAME')
+        image_pos = header.find('IMAGE')
+        command_pos = header.find('COMMAND')
+        service_pos = header.find('SERVICE')
+        created_pos = header.find('CREATED')
+        status_pos = header.find('STATUS')
+        ports_pos = header.find('PORTS')
+        
+        # Parse each container line
+        for line in lines[1:]:
+            if line.strip():
+                container = {}
+                
+                # Extract fields based on column positions
+                if name_pos >= 0 and name_pos < len(line):
+                    container['name'] = line[name_pos:image_pos].strip() if image_pos > name_pos else line[name_pos:].strip()
+                
+                if image_pos >= 0 and image_pos < len(line):
+                    container['image'] = line[image_pos:command_pos].strip() if command_pos > image_pos else line[image_pos:].strip()
+                
+                if command_pos >= 0 and command_pos < len(line):
+                    container['command'] = line[command_pos:service_pos].strip() if service_pos > command_pos else line[command_pos:].strip()
+                
+                if service_pos >= 0 and service_pos < len(line):
+                    container['service'] = line[service_pos:created_pos].strip() if created_pos > service_pos else line[service_pos:].strip()
+                
+                if created_pos >= 0 and created_pos < len(line):
+                    container['created'] = line[created_pos:status_pos].strip() if status_pos > created_pos else line[created_pos:].strip()
+                
+                if status_pos >= 0 and status_pos < len(line):
+                    container['status'] = line[status_pos:ports_pos].strip() if ports_pos > status_pos else line[status_pos:].strip()
+                
+                if ports_pos >= 0 and ports_pos < len(line):
+                    container['ports'] = line[ports_pos:].strip()
+                
+                containers.append(container)
+        
+        if len(containers) == 1:
+            return containers[0]  # Return single container as object
+        else:
+            return {'containers': containers}  # Return multiple containers as array
+            
+    except Exception as e:
+        logger.error(f"Error parsing container details: {e}")
+        return {'raw_output': ps_output, 'parse_error': str(e)}
 
 def get_branch_logs(branch_name, lines=50):
     """Get logs from a branch's Docker container"""
@@ -181,4 +252,76 @@ def cleanup_branch_environment(branch_name):
         return True
     except Exception as e:
         logger.error(f"Error cleaning up branch {branch_name}: {e}")
-        return False 
+        return False
+
+def execute_in_branch_container(branch_name, command, detach=False):
+    """Execute a command inside a branch's Docker container"""
+    try:
+        # Get the container name for this branch
+        container_name = f'hovel-app-{branch_name}'
+        
+        # Check if container is running
+        status = get_branch_container_status(branch_name)
+        if status.get('status') != 'running':
+            raise Exception(f"Container for branch {branch_name} is not running")
+        
+        # Execute command in container
+        cmd = ['docker', 'exec']
+        if detach:
+            cmd.append('-d')
+        cmd.extend([container_name] + command)
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        
+        logger.info(f"Executed command in container {container_name}: {' '.join(command)}")
+        return {
+            'success': True,
+            'stdout': result.stdout,
+            'stderr': result.stderr,
+            'return_code': result.returncode
+        }
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to execute command in container for branch {branch_name}: {e}")
+        return {
+            'success': False,
+            'stdout': e.stdout,
+            'stderr': e.stderr,
+            'return_code': e.returncode,
+            'error': str(e)
+        }
+    except Exception as e:
+        logger.error(f"Error executing command in container for branch {branch_name}: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+def start_ttyd_session(branch_name, port=7681):
+    """Start a ttyd session with gemini-cli in a branch container"""
+    try:
+        # Check if container is running
+        status = get_branch_container_status(branch_name)
+        if status.get('status') != 'running':
+            raise Exception(f"Container for branch {branch_name} is not running")
+        
+        # Start ttyd with gemini-cli in detached mode
+        command = ['ttyd', '-o', '-W', '-p', str(port), 'gemini']
+        result = execute_in_branch_container(branch_name, command, detach=True)
+        
+        if result['success']:
+            logger.info(f"Started ttyd session for branch {branch_name} on port {port}")
+            return {
+                'success': True,
+                'port': port,
+                'url': f"http://localhost:{port}",
+                'message': f"ttyd session started on port {port}"
+            }
+        else:
+            raise Exception(f"Failed to start ttyd session: {result.get('error', 'Unknown error')}")
+            
+    except Exception as e:
+        logger.error(f"Error starting ttyd session for branch {branch_name}: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        } 

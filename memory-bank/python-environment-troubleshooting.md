@@ -32,6 +32,17 @@ When trying to run a Flask application (`server.py`), encountered multiple issue
 - Cannot install packages system-wide
 - Virtual environment creation fails due to SSL issues
 
+**Solutions:**
+1. **Use system Python**: `/usr/local/bin/python3.11 server.py` (RECOMMENDED)
+2. Use specific Python binary: `/usr/local/bin/python3.11 server.py`
+3. Override with flag: `pip install --break-system-packages flask`
+
+**IMPORTANT UPDATE: Always use system Python instead of virtual environments**
+- Virtual environments have SSL issues in this containerized environment
+- System Python has all required packages pre-installed
+- Use `/usr/local/bin/python3.11` for all Python operations
+- Avoid `source venv/bin/activate` as it causes SSL connection problems
+
 ### 4. Port Conflicts in Branch Management
 **Symptoms:**
 - Multiple branches created with same port (8000)
@@ -189,8 +200,11 @@ python3 -c "import flask; print('Flask found')"
 # Install SSL support (if needed)
 apt-get update && apt-get install -y libssl-dev python3-openssl ca-certificates
 
-# Run server with specific Python binary
+# Run server with system Python (RECOMMENDED)
 /usr/local/bin/python3.11 server.py
+
+# Run test scripts with system Python
+/usr/local/bin/python3.11 test_script.py
 
 # Test branch creation with unique ports
 curl -X POST http://localhost:8000/api/branch \
@@ -198,9 +212,10 @@ curl -X POST http://localhost:8000/api/branch \
   -d '{"branch_name": "test-branch"}'
 
 # Verify port assignments
-curl -s http://localhost:8000/api/branches
 cat branches/test-branch/.env
 ```
+
+**IMPORTANT: Always use system Python (`/usr/local/bin/python3.11`) instead of virtual environments**
 
 ## Prevention Strategies
 
@@ -224,7 +239,7 @@ cat branches/test-branch/.env
 
 ### 1. Branch Creation with Gemini CLI Support
 - When a new branch is created via the API, the `.gemini` settings directory is copied into the new branch's directory.
-- The `config.template.json` file is used to generate a branch-specific `.gemini/config.json` file.
+- The `settings.template.json` file is used to generate a branch-specific `.gemini/settings.json` file.
 - The API key provided in the branch creation request is injected into the config file, replacing both `YOUR_GEMINI_API_KEY_HERE` and `{{ GEMINI_API_KEY }}` placeholders.
 - This ensures each branch is ready for Gemini CLI usage with the correct API key.
 
@@ -238,7 +253,7 @@ cat branches/test-branch/.env
 
 ### 4. Error Handling and Security
 - If the API key is missing or invalid, branch creation is rejected with a clear error message.
-- The `.gemini/config.json` file is gitignored to prevent accidental exposure of API keys.
+- The `.gemini/settings.json` file is gitignored to prevent accidental exposure of API keys.
 
 ### 5. Best Practices
 - Always use a template config and inject secrets at runtime or branch creation.

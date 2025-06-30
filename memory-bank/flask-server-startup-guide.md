@@ -37,10 +37,16 @@ python server.py
 python3 server.py
 ```
 
-#### Option C: Specific Python Binary (recommended for containers)
+#### Option C: Specific Python Binary (RECOMMENDED for containers)
 ```bash
 /usr/local/bin/python3.11 server.py
 ```
+
+**IMPORTANT: Always use system Python instead of virtual environments**
+- Virtual environments have SSL issues in containerized environments
+- System Python has all required packages pre-installed
+- Use `/usr/local/bin/python3.11` for all Python operations
+- Avoid activating virtual environments with `source venv/bin/activate`
 
 ## Troubleshooting Flow
 
@@ -65,9 +71,14 @@ apt-get update && apt-get install -y libssl-dev python3-openssl ca-certificates
 **If you get:** `error: externally-managed-environment`
 
 **Solutions:**
-1. Use virtual environment: `python3 -m venv venv && source venv/bin/activate`
+1. **Use system Python (RECOMMENDED)**: `/usr/local/bin/python3.11 server.py`
 2. Use specific Python binary: `/usr/local/bin/python3.11 server.py`
 3. Override with flag: `pip install --break-system-packages flask`
+
+**IMPORTANT: Avoid virtual environments in this containerized environment**
+- Virtual environments have SSL issues that prevent package installation
+- System Python has all required packages pre-installed
+- Always use `/usr/local/bin/python3.11` for Python operations
 
 ### Step 4: Port Conflicts in Branch Management (NEW)
 **If you get:** Multiple branches with same port or port conflicts
@@ -213,7 +224,7 @@ curl -s http://localhost:8000/
 |-------|---------------|----------|
 | Flask not found | `ModuleNotFoundError: No module named 'flask'` | Use `/usr/local/bin/python3.11 server.py` |
 | SSL not available | `WARNING: pip is configured with locations that require TLS/SSL` | Install SSL packages |
-| External environment | `error: externally-managed-environment` | Use specific Python binary or virtual env |
+| External environment | `error: externally-managed-environment` | Use system Python or specific Python binary |
 | Port already in use | `Address already in use` | Change port or kill existing process |
 | Branch port conflicts | Multiple branches with same port | Verify unique port assignment in .env files |
 

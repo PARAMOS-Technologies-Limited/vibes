@@ -37,6 +37,7 @@ def api_status():
             '/api/branch/{branch_name}/status',
             '/api/branch/{branch_name}/logs',
             '/api/branch/{branch_name}/restart',
+            '/api/branch/{branch_name}/gemini-session',
             '/api/branch/{branch_name} (DELETE)'
         ],
         'timestamp': datetime.utcnow().isoformat() + 'Z'

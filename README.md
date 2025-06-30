@@ -192,8 +192,8 @@ hovel/
 │   ├── GEMINI_CLI.md          # Gemini CLI integration guide
 │   └── POSTMAN_SETUP.md       # Postman collection setup guide
 ├── .gemini/                    # Gemini CLI configuration
-│   ├── config.json            # Main configuration (gitignored)
-│   └── config.template.json   # Template configuration
+│   ├── settings.json          # Main configuration (gitignored)
+│   └── settings.template.json # Template configuration
 ├── memory-bank/                # AI Agent Knowledge Base
 │   ├── python-environment-troubleshooting.md
 │   ├── flask-server-startup-guide.md

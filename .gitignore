@@ -3,7 +3,7 @@
 .env
 
 # Gemini CLI configuration (contains API keys)
-.gemini/config.json
+.gemini/settings.json
 
 # Keep the README for documentation
-!.gemini/config.template.md
+!.gemini/settings.template.md

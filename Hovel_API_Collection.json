@@ -240,6 +240,27 @@
                   "response": []
                 },
                 {
+                  "name": "gemini-session",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/gemini-session",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}",
+                        "gemini-session"
+                      ]
+                    },
+                    "description": "Start a ttyd session with gemini-cli in the specified branch container. Returns a URL to access the Gemini CLI terminal in the browser."
+                  },
+                  "response": []
+                },
+                {
                   "name": "delete",
                   "request": {
                     "method": "DELETE",
