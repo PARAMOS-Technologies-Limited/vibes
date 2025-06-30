@@ -7,7 +7,7 @@ from . import gemini
 
 logger = logging.getLogger(__name__)
 
-def duplicate_app_directory(branch_name, port, api_key=None):
+def duplicate_app_directory(branch_name, port, api_key=None, services=None):
     """Duplicate the app directory for the new branch"""
     try:
         # Get template directory from environment variable or use default
@@ -31,7 +31,7 @@ def duplicate_app_directory(branch_name, port, api_key=None):
         create_branch_env_file(branch_name, target_dir, port, api_key)
         
         # Create branch-specific Docker Compose file
-        create_branch_docker_compose(branch_name, target_dir, port)
+        create_branch_docker_compose(branch_name, target_dir, port, services)
         
         # Create branch-specific Gemini config if API key is provided
         if api_key:
@@ -64,7 +64,7 @@ BRANCH_NAME={branch_name}
     except Exception as e:
         logger.warning(f"Could not create environment file: {e}")
 
-def create_branch_docker_compose(branch_name, target_dir, port):
+def create_branch_docker_compose(branch_name, target_dir, port, services=None):
     """Create Docker Compose file for the branch using template"""
     try:
         # Get template directory path
@@ -87,13 +87,112 @@ def create_branch_docker_compose(branch_name, target_dir, port):
         compose_content = compose_content.replace('{{PORT}}', str(port))
         compose_content = compose_content.replace('{{PORT_TTYD}}', str(ttyd_port))
         
+        # If services are specified, filter the Docker Compose content to include only those services
+        if services and isinstance(services, list):
+            compose_content = filter_docker_compose_services(compose_content, services)
+        
         compose_file = os.path.join(target_dir, 'docker-compose.yaml')
         with open(compose_file, 'w') as f:
             f.write(compose_content)
         
         logger.info(f"Created Docker Compose file from template: {compose_file}")
+        if services:
+            logger.info(f"Filtered to include services: {services}")
     except Exception as e:
         logger.warning(f"Could not create Docker Compose file: {e}")
+
+def filter_docker_compose_services(compose_content, services):
+    """Filter Docker Compose content to include only specified services"""
+    try:
+        import yaml
+        
+        # Parse the YAML content
+        compose_data = yaml.safe_load(compose_content)
+        
+        if not compose_data or 'services' not in compose_data:
+            return compose_content
+        
+        # Filter services
+        original_services = compose_data['services']
+        filtered_services = {}
+        
+        for service_name in services:
+            if service_name in original_services:
+                filtered_services[service_name] = original_services[service_name]
+            else:
+                logger.warning(f"Service '{service_name}' not found in Docker Compose template")
+        
+        # Update the compose data with filtered services
+        compose_data['services'] = filtered_services
+        
+        # Convert back to YAML
+        return yaml.dump(compose_data, default_flow_style=False, sort_keys=False)
+        
+    except ImportError:
+        logger.warning("PyYAML not available, using string-based filtering")
+        return filter_docker_compose_services_string(compose_content, services)
+    except Exception as e:
+        logger.warning(f"Error filtering Docker Compose services: {e}")
+        return compose_content
+
+def filter_docker_compose_services_string(compose_content, services):
+    """Fallback string-based filtering for Docker Compose services"""
+    try:
+        lines = compose_content.split('\n')
+        filtered_lines = []
+        in_services_section = False
+        current_service = None
+        include_current_service = False
+        indent_level = 0
+        
+        for line in lines:
+            stripped_line = line.strip()
+            
+            # Check if we're entering the services section
+            if stripped_line == 'services:':
+                in_services_section = True
+                filtered_lines.append(line)
+                continue
+            
+            # If we're not in services section, include all lines
+            if not in_services_section:
+                filtered_lines.append(line)
+                continue
+            
+            # Calculate indent level
+            indent_level = len(line) - len(line.lstrip())
+            
+            # Check if this is a service definition (top level in services)
+            if in_services_section and indent_level == 2 and stripped_line and not stripped_line.startswith('#'):
+                current_service = stripped_line.rstrip(':')
+                include_current_service = current_service in services
+                
+                if include_current_service:
+                    filtered_lines.append(line)
+                continue
+            
+            # Include lines that belong to included services
+            if include_current_service:
+                filtered_lines.append(line)
+            # If we encounter a line with same or less indent as service definition, we're done with this service
+            elif in_services_section and indent_level <= 2 and stripped_line and not stripped_line.startswith('#'):
+                # This might be another service or end of services section
+                if stripped_line == 'networks:' or stripped_line == 'volumes:' or stripped_line == 'configs:':
+                    # End of services section
+                    in_services_section = False
+                    filtered_lines.append(line)
+                else:
+                    # Another service
+                    current_service = stripped_line.rstrip(':')
+                    include_current_service = current_service in services
+                    if include_current_service:
+                        filtered_lines.append(line)
+        
+        return '\n'.join(filtered_lines)
+        
+    except Exception as e:
+        logger.warning(f"Error in string-based filtering: {e}")
+        return compose_content
 
 def create_branch_config(branch_name, port, app_dir):
     """Create configuration for the new branch"""

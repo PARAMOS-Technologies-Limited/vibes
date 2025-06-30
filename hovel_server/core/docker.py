@@ -30,7 +30,7 @@ def build_branch_image(branch_name):
         logger.error(f"Error building Docker image for branch {branch_name}: {e}")
         return False
 
-def start_branch_container(branch_name):
+def start_branch_container(branch_name, services=None):
     """Start Docker container for a branch"""
     try:
         branch_dir = f'branches/{branch_name}'
@@ -39,11 +39,19 @@ def start_branch_container(branch_name):
         if not os.path.exists(compose_file):
             raise FileNotFoundError(f"Docker Compose file not found for branch {branch_name}")
         
+        # Build command based on whether specific services are requested
+        if services and isinstance(services, list):
+            # Start specific services
+            cmd = ['docker-compose', '-f', 'docker-compose.yaml', 'up', '-d'] + services
+            logger.info(f"Starting specific services for branch {branch_name}: {services}")
+        else:
+            # Start all services
+            cmd = ['docker-compose', '-f', 'docker-compose.yaml', 'up', '-d']
+            logger.info(f"Starting all services for branch {branch_name}")
+        
         # Start the container using docker-compose
         # Use just the filename since cwd is set to branch_dir
-        result = subprocess.run([
-            'docker-compose', '-f', 'docker-compose.yaml', 'up', '-d'
-        ], capture_output=True, text=True, cwd=branch_dir, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=branch_dir, check=True)
         
         logger.info(f"Started Docker container for branch {branch_name}")
         return True

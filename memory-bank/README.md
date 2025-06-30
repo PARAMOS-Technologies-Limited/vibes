@@ -75,6 +75,14 @@ This directory contains comprehensive documentation and lessons learned for AI a
 4. **Testing scripts**: Use `/usr/local/bin/python3.11 script.py` for test execution
 5. **Server startup**: Use `/usr/local/bin/python3.11 server.py` for Flask server
 
+### When Managing Service Selection (NEW)
+1. **Specify services during branch creation**: Use `services` parameter in `POST /api/branch`
+2. **Filter Docker Compose templates**: Only specified services are included in branch Docker Compose files
+3. **Start specific services**: Use `services` parameter in `POST /api/branch/{name}/start`
+4. **Backward compatibility**: Defaults to `["app"]` if no services specified
+5. **Service validation**: Only services that exist in the template can be specified
+6. **Performance optimization**: Start only needed services to reduce resource usage
+
 ## 🔍 Search Keywords
 
 Use these keywords to quickly find relevant information:
@@ -94,6 +102,7 @@ Use these keywords to quickly find relevant information:
 - **Terminal sessions**: ttyd, gemini-cli, web terminals, session management
 - **Gemini integration**: gemini-cli, API sessions, terminal access
 - **System Python**: Use system Python instead of virtual environments, SSL issues
+- **Service selection**: Docker services, service filtering, selective startup, resource optimization
 
 ## 📖 How to Use This Knowledge Base
 
@@ -140,7 +149,85 @@ Use these keywords to quickly find relevant information:
 4. **Session Persistence**: Session details are saved in .branch files
 5. **Error Handling**: Proper validation for container status and branch existence
 
+### When Working with Service Selection (NEW)
+1. **Branch Creation**: Specify `services` parameter to include only needed services
+2. **Template Filtering**: Docker Compose templates are filtered to include only specified services
+3. **Service Startup**: Use `services` parameter in start endpoint to start specific services
+4. **Resource Optimization**: Start only required services to reduce resource usage
+5. **Backward Compatibility**: Defaults to `["app"]` if no services specified
+6. **Service Validation**: Only services that exist in the template can be specified
+
 ## 🎉 Recent Achievements
+
+### Service Selection System - COMPLETED ✅
+**Problem Solved:** Users needed the ability to choose which Docker services to include and start in their development branches, rather than always starting all services.
+
+**Solution Implemented:**
+1. **Services parameter in branch creation**: Added `services` parameter to `POST /api/branch` endpoint
+2. **Services parameter in container start**: Added `services` parameter to `POST /api/branch/{name}/start` endpoint
+3. **Docker Compose filtering**: Implemented YAML-based and string-based filtering of Docker Compose templates
+4. **Backward compatibility**: Defaults to `["app"]` if no services specified
+5. **Service validation**: Only services that exist in the template can be specified
+6. **Resource optimization**: Users can start only needed services to reduce resource usage
+
+**Code Changes:**
+```python
+# Before: Always include all services
+def duplicate_app_directory(branch_name, port, api_key=None):
+    # Always included all services from template
+
+# After: Filter services based on parameter
+def duplicate_app_directory(branch_name, port, api_key=None, services=None):
+    # Filter Docker Compose template to include only specified services
+    create_branch_docker_compose(branch_name, target_dir, port, services)
+
+# Before: Always start all services
+def start_branch_container(branch_name):
+    cmd = ['docker-compose', '-f', 'docker-compose.yaml', 'up', '-d']
+
+# After: Start specific services
+def start_branch_container(branch_name, services=None):
+    if services and isinstance(services, list):
+        cmd = ['docker-compose', '-f', 'docker-compose.yaml', 'up', '-d'] + services
+    else:
+        cmd = ['docker-compose', '-f', 'docker-compose.yaml', 'up', '-d']
+```
+
+**Benefits:**
+- 🎯 **Selective service inclusion**: Only include needed services in branch Docker Compose files
+- 🚀 **Flexible startup**: Start specific services or all services as needed
+- 💾 **Resource optimization**: Reduce resource usage by starting only required services
+- 🔄 **Backward compatibility**: Existing code continues to work with default `["app"]` service
+- 🧪 **Development flexibility**: Different service combinations for different development scenarios
+- 📊 **Performance monitoring**: Better resource utilization and monitoring
+
+**API Usage Examples:**
+```bash
+# Create branch with specific services
+curl -X POST http://localhost:8000/api/branch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "branch_name": "full-stack-feature",
+    "services": ["app", "database", "redis", "nginx"],
+    "gemini_api_key": "YOUR_GEMINI_API_KEY"
+  }'
+
+# Start only specific services
+curl -X POST http://localhost:8000/api/branch/full-stack-feature/start \
+  -H "Content-Type: application/json" \
+  -d '{"services": ["app", "database"]}'
+
+# Start all services in the branch
+curl -X POST http://localhost:8000/api/branch/full-stack-feature/start
+```
+
+**Testing:**
+- ✅ Service filtering during branch creation
+- ✅ Selective service startup
+- ✅ Backward compatibility with existing code
+- ✅ Service validation and error handling
+- ✅ Resource optimization verification
+- ✅ API endpoint functionality
 
 ### External Template System - COMPLETED ✅
 **Problem Solved:** The app directory was embedded in the main repository, making template management difficult and requiring repo changes for template updates.
@@ -364,4 +451,4 @@ This knowledge base should be updated whenever:
 
 ---
 
-*This memory bank serves as a comprehensive knowledge base for AI agents working on the Hovel project, ensuring consistent problem-solving approaches and best practices. The recent Docker integration demonstrates the value of this knowledge base in solving complex development challenges.* 
+*This memory bank serves as a comprehensive knowledge base for AI agents working on the Hovel project, ensuring consistent problem-solving approaches and best practices. The recent service selection system demonstrates the value of this knowledge base in solving complex development challenges.* 

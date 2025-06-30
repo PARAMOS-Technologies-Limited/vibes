@@ -36,10 +36,15 @@ def create_branch():
         
         branch_name = data['branch_name']
         auto_start = data.get('auto_start', True)  # Default to True for immediate build
+        services = data.get('services', ['app'])  # Default to ['app'] for backward compatibility
         
         # Validate branch name
         if not branch_name or not branch_name.strip():
             return jsonify({'error': 'branch_name cannot be empty'}), 400
+        
+        # Validate services parameter
+        if not isinstance(services, list):
+            return jsonify({'error': 'services must be a list'}), 400
         
         # Check if branch already exists
         if utils.branch_exists(branch_name):
@@ -52,7 +57,7 @@ def create_branch():
         git.create_git_branch(branch_name)
         
         # Duplicate app directory (this will create env files and docker compose)
-        app_dir = branch.duplicate_app_directory(branch_name, port, api_key)
+        app_dir = branch.duplicate_app_directory(branch_name, port, api_key, services)
         
         # Create branch configuration
         config = branch.create_branch_config(branch_name, port, app_dir)
@@ -67,19 +72,20 @@ def create_branch():
             'git_branch': branch_name,
             'gemini_api_validated': True,
             'gemini_settings_created': True,
-            'gemini_settings_path': f'{app_dir}/.gemini/settings.json'
+            'gemini_settings_path': f'{app_dir}/.gemini/settings.json',
+            'services': services  # Store the services list
         }
         utils.save_branch_info(branch_name, branch_info)
         
         # Start background build task if auto_start is enabled
         task_id = None
         if auto_start:
-            task_id = background_tasks.start_branch_build_task(branch_name)
+            task_id = background_tasks.start_branch_build_task(branch_name, services)
             branch_info['build_task_id'] = task_id
             branch_info['status'] = 'building'
             utils.save_branch_info(branch_name, branch_info)
         
-        logger.info(f"Created branch {branch_name} on port {port}")
+        logger.info(f"Created branch {branch_name} on port {port} with services: {services}")
         
         response_data = {
             'message': f'Branch {branch_name} created successfully',
@@ -89,6 +95,7 @@ def create_branch():
             'git_branch': branch_name,
             'status': 'created',
             'auto_start': auto_start,
+            'services': services,
             'build_task_id': task_id,
             'gemini_api_validated': True,
             'gemini_settings_created': True,
@@ -131,21 +138,33 @@ def start_branch(branch_name):
         if not utils.branch_exists(branch_name):
             return jsonify({'error': f'Branch {branch_name} not found'}), 404
         
-        success = docker.start_branch_container(branch_name)
+        # Get services from request body, default to all services if not specified
+        data = request.get_json() or {}
+        services = data.get('services', None)  # None means start all services
+        
+        # Validate services parameter if provided
+        if services is not None and not isinstance(services, list):
+            return jsonify({'error': 'services must be a list'}), 400
+        
+        success = docker.start_branch_container(branch_name, services)
         if success:
             # Update branch status in .branch file
             branch_info = utils.get_branch_info(branch_name)
             if branch_info:
                 branch_info['status'] = 'running'
                 branch_info['container_started'] = True
+                if services:
+                    branch_info['started_services'] = services
                 utils.save_branch_info(branch_name, branch_info)
             
-            return jsonify({
+            response_data = {
                 'message': f'Branch {branch_name} started successfully',
                 'branch_name': branch_name,
                 'status': 'started',
+                'services_started': services or 'all',
                 'timestamp': datetime.utcnow().isoformat() + 'Z'
-            }), 200
+            }
+            return jsonify(response_data), 200
         else:
             return jsonify({'error': f'Failed to start branch {branch_name}'}), 500
             

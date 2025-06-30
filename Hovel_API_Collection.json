@@ -88,7 +88,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"branch_name\": \"feature-branch\",\n  \"auto_start\": true,\n  \"gemini_api_key\": \"{{gemini_api_key}}\"\n}"
+                  "raw": "{\n  \"branch_name\": \"feature-branch\",\n  \"auto_start\": true,\n  \"services\": [\"app\", \"database\", \"cache\"],\n  \"gemini_api_key\": \"{{gemini_api_key}}\"\n}"
                 },
                 "url": {
                   "raw": "{{server_base_url}}/api/branch",
@@ -100,7 +100,35 @@
                     "branch"
                   ]
                 },
-                "description": "Create a new branch with duplicated app directory and optional auto-start. Requires valid Gemini API key in request body."
+                "description": "Create a new branch with duplicated app directory and optional auto-start. The 'services' parameter allows you to specify which Docker services to include in the branch. If not specified, defaults to ['app'] for backward compatibility. Requires valid Gemini API key in request body."
+              },
+              "response": []
+            },
+            {
+              "name": "create (minimal)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"branch_name\": \"feature-branch\",\n  \"gemini_api_key\": \"{{gemini_api_key}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{server_base_url}}/api/branch",
+                  "host": [
+                    "{{server_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "branch"
+                  ]
+                },
+                "description": "Create a new branch with minimal configuration (auto_start=true, services=['app'])"
               },
               "response": []
             },
@@ -131,6 +159,36 @@
                   "name": "start",
                   "request": {
                     "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"services\": [\"app\", \"database\"]\n}"
+                    },
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/start",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}",
+                        "start"
+                      ]
+                    },
+                    "description": "Start Docker container for a specific branch. The 'services' parameter allows you to specify which services to start. If not provided, starts all services defined in the branch's Docker Compose file."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "start (all services)",
+                  "request": {
+                    "method": "POST",
                     "header": [],
                     "url": {
                       "raw": "{{server_base_url}}/api/branch/{{branch_name}}/start",
@@ -144,7 +202,7 @@
                         "start"
                       ]
                     },
-                    "description": "Start Docker container for a specific branch"
+                    "description": "Start all Docker services for a specific branch"
                   },
                   "response": []
                 },
@@ -240,27 +298,6 @@
                   "response": []
                 },
                 {
-                  "name": "gemini-session",
-                  "request": {
-                    "method": "POST",
-                    "header": [],
-                    "url": {
-                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/gemini-session",
-                      "host": [
-                        "{{server_base_url}}"
-                      ],
-                      "path": [
-                        "api",
-                        "branch",
-                        "{{branch_name}}",
-                        "gemini-session"
-                      ]
-                    },
-                    "description": "Start a ttyd session with gemini-cli in the specified branch container. Returns a URL to access the Gemini CLI terminal in the browser."
-                  },
-                  "response": []
-                },
-                {
                   "name": "delete",
                   "request": {
                     "method": "DELETE",
@@ -277,6 +314,27 @@
                       ]
                     },
                     "description": "Completely cleanup and delete a branch environment"
+                  },
+                  "response": []
+                },
+                {
+                  "name": "gemini-session",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{server_base_url}}/api/branch/{{branch_name}}/gemini-session",
+                      "host": [
+                        "{{server_base_url}}"
+                      ],
+                      "path": [
+                        "api",
+                        "branch",
+                        "{{branch_name}}",
+                        "gemini-session"
+                      ]
+                    },
+                    "description": "Start a ttyd session with gemini-cli in a branch container"
                   },
                   "response": []
                 }

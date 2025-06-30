@@ -25,7 +25,17 @@ class BackgroundTask:
         self.error = None
         self.result = None
 
-def start_branch_build_task(branch_name):
+    def update_status(self, status, message):
+        self.status = status
+        self.message = message
+        if status == 'building':
+            self.started_at = datetime.utcnow().isoformat() + 'Z'
+        elif status == 'completed':
+            self.completed_at = datetime.utcnow().isoformat() + 'Z'
+        elif status == 'failed':
+            self.error = message
+
+def start_branch_build_task(branch_name, services=None):
     """Start a background task to build and start a Docker container for a branch"""
     task_id = f"build_{branch_name}_{int(time.time())}"
     
@@ -36,103 +46,55 @@ def start_branch_build_task(branch_name):
     # Start background thread
     thread = threading.Thread(
         target=_build_branch_container,
-        args=(task_id, branch_name),
+        args=(task_id, branch_name, services),
         daemon=True
     )
     thread.start()
     
     return task_id
 
-def _build_branch_container(task_id, branch_name):
-    """Background function to build and start Docker container"""
-    task = background_tasks[task_id]
-    
+def _build_branch_container(task_id, branch_name, services=None):
+    """Background task to build and start a branch container"""
     try:
-        # Update task status
-        task.status = 'building'
-        task.started_at = datetime.utcnow().isoformat() + 'Z'
-        task.message = 'Building Docker container...'
-        task.progress = 10
+        task = background_tasks.get(task_id)
+        if not task:
+            logger.error(f"Task {task_id} not found")
+            return
         
-        # Update branch status
+        task.update_status('building', 'Building Docker image...')
+        
+        # Build the Docker image
+        success = docker.build_branch_image(branch_name)
+        if not success:
+            task.update_status('failed', 'Failed to build Docker image')
+            return
+        
+        task.update_status('starting', 'Starting Docker container...')
+        
+        # Start the container
+        success = docker.start_branch_container(branch_name, services)
+        if not success:
+            task.update_status('failed', 'Failed to start Docker container')
+            return
+        
+        task.update_status('completed', 'Branch container started successfully')
+        
+        # Update branch info
         branch_info = utils.get_branch_info(branch_name)
-        if branch_info:
-            branch_info['status'] = 'building'
-            branch_info['build_task_id'] = task_id
-            utils.save_branch_info(branch_name, branch_info)
-        
-        # Step 1: Build the Docker image
-        task.message = 'Building Docker image...'
-        task.progress = 20
-        
-        build_success = docker.build_branch_image(branch_name)
-        if not build_success:
-            raise Exception("Failed to build Docker image")
-        
-        task.progress = 50
-        task.message = 'Docker image built successfully'
-        
-        # Step 2: Start the container
-        task.message = 'Starting Docker container...'
-        task.progress = 70
-        
-        start_success = docker.start_branch_container(branch_name)
-        if not start_success:
-            raise Exception("Failed to start Docker container")
-        
-        task.progress = 90
-        task.message = 'Docker container started successfully'
-        
-        # Step 3: Wait for container to be ready
-        task.message = 'Waiting for container to be ready...'
-        task.progress = 95
-        
-        # Wait up to 30 seconds for container to be ready
-        ready = False
-        for i in range(30):
-            container_status = docker.get_branch_container_status(branch_name)
-            if container_status.get('status') == 'running':
-                ready = True
-                break
-            time.sleep(1)
-        
-        if not ready:
-            raise Exception("Container did not become ready within timeout")
-        
-        # Task completed successfully
-        task.status = 'completed'
-        task.progress = 100
-        task.message = 'Branch container is ready'
-        task.completed_at = datetime.utcnow().isoformat() + 'Z'
-        task.result = {
-            'container_status': 'running',
-            'port': branch_info.get('port') if branch_info else None
-        }
-        
-        # Update branch status
         if branch_info:
             branch_info['status'] = 'running'
             branch_info['container_started'] = True
-            branch_info['build_completed_at'] = task.completed_at
+            if services:
+                branch_info['started_services'] = services
             utils.save_branch_info(branch_name, branch_info)
         
-        logger.info(f"Background build task {task_id} completed successfully for branch {branch_name}")
+        logger.info(f"Background build task {task_id} completed successfully")
         
     except Exception as e:
-        # Task failed
-        task.status = 'failed'
-        task.error = str(e)
-        task.message = f'Build failed: {str(e)}'
-        task.completed_at = datetime.utcnow().isoformat() + 'Z'
-        
-        # Update branch status
-        branch_info = utils.get_branch_info(branch_name)
-        if branch_info:
-            branch_info['status'] = 'build_failed'
-            branch_info['build_error'] = str(e)
-            utils.save_branch_info(branch_name, branch_info)
-        
-        logger.error(f"Background build task {task_id} failed for branch {branch_name}: {e}")
+        logger.error(f"Error in background build task {task_id}: {e}")
+        task = background_tasks.get(task_id)
+        if task:
+            task.update_status('failed', f'Build failed: {str(e)}')
 
 def get_task_status(task_id):
     """Get the status of a background task"""
