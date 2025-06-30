@@ -6,11 +6,9 @@ services:
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${APP_TEMPLATE_PATH:-./app}:/app
-    environment:
-      - FLASK_ENV=development
-      - FLASK_APP=server.py
-      - APP_TEMPLATE_PATH=/app
+      - ${APP_TEMPLATE_PATH:-./app}:/template
+    env_file:
+      - .env
     restart: unless-stopped
     privileged: true
     security_opt:

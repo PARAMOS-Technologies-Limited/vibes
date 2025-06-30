@@ -1,6 +1,6 @@
 .docker
 **/*venv*
-.env
+**/.env*
 
 # Gemini CLI configuration (contains API keys)
 .gemini/settings.json

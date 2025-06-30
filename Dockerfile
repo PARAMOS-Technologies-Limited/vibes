@@ -43,25 +43,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create a script to start Docker daemon and then the application
-RUN echo '#!/bin/bash\n\
-# Start Docker daemon in background\n\
-dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2376 &\n\
-\n\
-# Wait for Docker daemon to be ready\n\
-until docker info > /dev/null 2>&1; do\n\
-  echo "Waiting for Docker daemon..."\n\
-  sleep 1\n\
-done\n\
-\n\
-echo "Docker daemon is ready"\n\
-\n\
-# Start the Flask application\n\
-exec python server.py\n\
-' > /app/start.sh && chmod +x /app/start.sh
+# Copy entrypoint script
+COPY scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose port
 EXPOSE 8000
 
-# Run the start script instead of directly running the app
-CMD ["/app/start.sh"] 
+# Use entrypoint script
+ENTRYPOINT ["/entrypoint.sh"] 
